@@ -39,6 +39,7 @@
   .register-form input { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 15px; margin-bottom: 10px; }
   .register-form button { width: 100%; padding: 14px; background: #8B0000; color: white; border: none; border-radius: 8px; font-size: 16px; cursor: pointer; }
 </style>
+<script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 </head>
 <body>
 
@@ -57,8 +58,15 @@ let memberData = null;
 let lineId = null;
 
 async function init() {
-  // 取得 LINE ID（之後串 LIFF 時會自動取得，現在先用測試）
-  lineId = new URLSearchParams(location.search).get('line_id') || 'test_' + Date.now();
+  await liff.init({ liffId: '2006569520-JIW00IVU' });
+  
+  if (!liff.isLoggedIn()) {
+    liff.login();
+    return;
+  }
+  
+  const profile = await liff.getProfile();
+  lineId = profile.userId;
   
   try {
     const res = await fetch(`${API}/api/member/points?line_id=${lineId}`);
@@ -94,10 +102,11 @@ function showRegister() {
 
 async function register() {
   const phone = document.getElementById('phone').value;
+  const profile = await liff.getProfile();
   const res = await fetch(`${API}/api/member`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ line_id: lineId, name: '會員', phone })
+    body: JSON.stringify({ line_id: lineId, name: profile.displayName, phone })
   });
   const data = await res.json();
   if (data.id) {
@@ -137,7 +146,7 @@ function showMemberCard() {
         <div class="points-number">${pts}</div>
         <div class="points-label">累積點數</div>
       </div>
-      <div class="member-name">📱 ${member.phone || '會員'}</div>
+      <div class="member-name">👤 ${member.name || ''} ${member.phone ? '📱 ' + member.phone : ''}</div>
     </div>
     <div class="section">
       <h2>🎁 點數兌換</h2>
