@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>麻媽家 店員後台</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Noto Sans TC', sans-serif; background: #f5f0eb; min-height: 100vh; }
+  .header { background: linear-gradient(135deg, #8B0000, #c0392b); color: white; padding: 20px; text-align: center; }
+  .header h1 { font-size: 20px; }
+  .header .staff-info { font-size: 13px; opacity: 0.8; margin-top: 5px; }
+  .section { padding: 20px; }
+  .card { background: white; border-radius: 12px; padding: 20px; margin-bottom: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+  .card h2 { font-size: 16px; color: #333; margin-bottom: 15px; }
+  input, select { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 15px; margin-bottom: 10px; }
+  .btn { width: 100%; padding: 14px; border: none; border-radius: 8px; font-size: 16px; cursor: pointer; color: white; }
+  .btn-primary { background: #8B0000; }
+  .btn-success { background: #27ae60; }
+  .btn-danger { background: #e74c3c; }
+  .member-info { background: #f8f9fa; border-radius: 8px; padding: 15px; margin-bottom: 15px; }
+  .member-info .name { font-size: 18px; font-weight: bold; color: #333; }
+  .member-info .points { font-size: 32px; font-weight: bold; color: #8B0000; }
+  .member-info .label { font-size: 13px; color: #999; }
+  .result { padding: 15px; border-radius: 8px; margin-top: 15px; text-align: center; font-size: 16px; font-weight: bold; display: none; }
+  .result.success { background: #d4edda; color: #155724; }
+  .result.error { background: #f8d7da; color: #721c24; }
+  .login-form { max-width: 400px; margin: 50px auto; }
+  .redeem-btn { background: white; border: 2px solid #8B0000; color: #8B0000; border-radius: 8px; padding: 12px; margin-bottom: 8px; width: 100%; font-size: 14px; cursor: pointer; }
+  .redeem-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .tab { display: flex; margin-bottom: 20px; background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+  .tab-btn { flex: 1; padding: 14px; border: none; background: white; cursor: pointer; font-size: 15px; }
+  .tab-btn.active { background: #8B0000; color: white; }
+</style>
+</head>
+<body>
+
+<div id="app"><div style="text-align:center;padding:50px;color:#999">載入中...</div></div>
+
+<script>
+const API = 'https://mamaja-member-api.renechen188.workers.dev';
+const REWARDS = [
+  { points: 3, name: '小菜一份' },
+  { points: 5, name: '招牌飲料' },
+  { points: 7, name: '指定主食' },
+  { points: 10, name: '雙人套餐' }
+];
+
+let currentStaff = null;
+let currentMember = null;
+let currentTab = 'add';
+
+function showLogin() {
+  document.getElementById('app').innerHTML = `
+    <div class="header"><h1>🍲 麻媽家 店員後台</h1></div>
+    <div class="section">
+      <div class="login-form card">
+        <h2>店員登入</h2>
+        <input type="text" id="username" placeholder="帳號">
+        <input type="password" id="password" placeholder="密碼">
+        <button class="btn btn-primary" onclick="login()">登入</button>
+        <div id="login-error" style="color:#e74c3c;text-align:center;margin-top:10px;display:none">帳號或密碼錯誤</div>
+      </div>
+    </div>
+  `;
+}
+
+async function login() {
+  const username = document.getElementById('username').value;
+  const password = document.getElementById('password').value;
+  const res = await fetch(`${API}/api/staff/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username, password })
+  });
+  const data = await res.json();
+  if (data.success) {
+    currentStaff = data.staff;
+    showMain();
+  } else {
+    document.getElementById('login-error').style.display = 'block';
+  }
+}
+
+function showMain() {
+  document.getElementById('app').innerHTML = `
+    <div class="header">
+      <h1>🍲 麻媽家 店員後台</h1>
+      <div class="staff-info">${currentStaff.name}｜${currentStaff.store}</div>
+    </div>
+    <div class="section">
+      <div class="tab">
+        <button class="tab-btn active" onclick="switchTab('add')" id="tab-add">➕ 加點</button>
+        <button class="tab-btn" onclick="switchTab('redeem')" id="tab-redeem">🎁 兌換</button>
+        <button class="tab-btn" onclick="switchTab('query')" id="tab-query">🔍 查詢</button>
+      </div>
+      <div id="tab-content"></div>
+    </div>
+  `;
+  showAddTab();
+}
+
+function switchTab(tab) {
+  currentTab = tab;
+  currentMember = null;
+  ['add','redeem','query'].forEach(t => {
+    document.getElementById(`tab-${t}`).className = 'tab-btn' + (t === tab ? ' active' : '');
+  });
+  if (tab === 'add') showAddTab();
+  if (tab === 'redeem') showRedeemTab();
+  if (tab === 'query') showQueryTab();
+}
+
+function showAddTab() {
+  document.getElementById('tab-content').innerHTML = `
+    <div class="card">
+      <h2>查詢會員</h2>
+      <input type="tel" id="search-phone" placeholder="輸入手機號碼" maxlength="10">
+      <button class="btn btn-primary" onclick="searchMember('add')">查詢</button>
+    </div>
+    <div id="member-result"></div>
+  `;
+}
+
+function showRedeemTab() {
+  document.getElementById('tab-content').innerHTML = `
+    <div class="card">
+      <h2>查詢會員</h2>
+      <input type="tel" id="search-phone" placeholder="輸入手機號碼" maxlength="10">
+      <button class="btn btn-primary" onclick="searchMember('redeem')">查詢</button>
+    </div>
+    <div id="member-result"></div>
+  `;
+}
+
+function showQueryTab() {
+  document.getElementById('tab-content').innerHTML = `
+    <div class="card">
+      <h2>查詢會員點數</h2>
+      <input type="tel" id="search-phone" placeholder="輸入手機號碼" maxlength="10">
+      <button class="btn btn-primary" onclick="searchMember('query')">查詢</button>
+    </div>
+    <div id="member-result"></div>
+  `;
+}
+
+async function searchMember(mode) {
+  const phone = document.getElementById('search-phone').value;
+  if (!phone) return alert('請輸入手機號碼');
+  
+  const res = await fetch(`${API}/api/member/by-phone?phone=${phone}`);
+  const data = await res.json();
+  
+  if (data.error) {
+    document.getElementById('member-result').innerHTML = `
+      <div class="card" style="text-align:center;color:#e74c3c">找不到此會員</div>`;
+    return;
+  }
+  
+  currentMember = data.member;
+  
+  if (mode === 'add') showAddPoints();
+  if (mode === 'redeem') showRedeemPoints();
+  if (mode === 'query') showQueryResult(data);
+}
+
+function showAddPoints() {
+  document.getElementById('member-result').innerHTML = `
+    <div class="card">
+      <div class="member-info">
+        <div class="label">會員</div>
+        <div class="name">${currentMember.phone}</div>
+        <div class="points">${currentMember.points}</div>
+        <div class="label">累積點數</div>
+      </div>
+      <h2>輸入消費金額</h2>
+      <input type="number" id="amount" placeholder="消費金額（元）" max="5000">
+      <div style="color:#999;font-size:13px;margin-bottom:10px">每 120 元 = 1 點</div>
+      <button class="btn btn-success" onclick="addPoints()">確認加點</button>
+      <div id="add-result" class="result"></div>
+    </div>
+  `;
+}
+
+function showRedeemPoints() {
+  const pts = currentMember.points;
+  const redeemBtns = REWARDS.map(r => `
+    <button class="redeem-btn" onclick="redeemPoints(${r.points},'${r.name}')" 
+      ${pts < r.points ? 'disabled' : ''}>
+      ${r.points} 點 → ${r.name} ${pts < r.points ? '（點數不足）' : ''}
+    </button>
+  `).join('');
+  
+  document.getElementById('member-result').innerHTML = `
+    <div class="card">
+      <div class="member-info">
+        <div class="label">會員</div>
+        <div class="name">${currentMember.phone}</div>
+        <div class="points">${pts}</div>
+        <div class="label">累積點數</div>
+      </div>
+      <h2>選擇兌換項目</h2>
+      ${redeemBtns}
+      <div id="redeem-result" class="result"></div>
+    </div>
+  `;
+}
+
+function showQueryResult(data) {
+  const txHTML = data.transactions && data.transactions.length > 0
+    ? data.transactions.map(t => `
+      <div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid #eee">
+        <div>
+          <div style="font-size:12px;color:#999">${new Date(t.created_at).toLocaleDateString('zh-TW')}</div>
+          <div style="font-size:14px">${t.type === 'add' ? `消費 NT$${t.amount}` : `兌換：${t.note||''}`}</div>
+        </div>
+        <div style="font-weight:bold;color:${t.type==='add'?'#27ae60':'#e74c3c'}">${t.type==='add'?'+':''}${t.points}點</div>
+      </div>`).join('')
+    : '<div style="color:#999;text-align:center;padding:15px">尚無紀錄</div>';
+
+  document.getElementById('member-result').innerHTML = `
+    <div class="card">
+      <div class="member-info">
+        <div class="label">會員</div>
+        <div class="name">${currentMember.phone}</div>
+        <div class="points">${currentMember.points}</div>
+        <div class="label">累積點數</div>
+      </div>
+      <h2>最近消費紀錄</h2>
+      ${txHTML}
+    </div>
+  `;
+}
+
+async function addPoints() {
+  const amount = parseInt(document.getElementById('amount').value);
+  if (!amount || amount <= 0) return alert('請輸入正確金額');
+  
+  const res = await fetch(`${API}/api/points/add`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      line_id: currentMember.line_id,
+      amount,
+      store: currentStaff.store,
+      staff: currentStaff.name
+    })
+  });
+  const data = await res.json();
+  const el = document.getElementById('add-result');
+  el.style.display = 'block';
+  if (data.success) {
+    el.className = 'result success';
+    el.innerHTML = `✅ 加點成功！本次 +${data.added} 點，累計 ${data.total} 點`;
+  } else {
+    el.className = 'result error';
+    el.innerHTML = `❌ ${data.error}`;
+  }
+}
+
+async function redeemPoints(points, name) {
+  if (!confirm(`確定兌換「${name}」，扣除 ${points} 點？`)) return;
+  
+  const res = await fetch(`${API}/api/points/redeem`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      line_id: currentMember.line_id,
+      points_used: points,
+      title: name,
+      store: currentStaff.store,
+      staff: currentStaff.name
+    })
+  });
+  const data = await res.json();
+  const el = document.getElementById('redeem-result');
+  el.style.display = 'block';
+  if (data.success) {
+    el.className = 'result success';
+    el.innerHTML = `✅ 兌換成功！剩餘 ${data.total} 點`;
+    currentMember.points = data.total;
+  } else {
+    el.className = 'result error';
+    el.innerHTML = `❌ ${data.error}`;
+  }
+}
+
+showLogin();
+</script>
+</body>
+</html>
