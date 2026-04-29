@@ -3,12 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>麻媽家 老闆後台</title>
+<title>麻媽家 LINE 會員管理後台</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body { font-family: 'Noto Sans TC', sans-serif; background: #f5f5f5; min-height: 100vh; }
   .header { background: linear-gradient(135deg, #cc6600, #FF8200); color: white; padding: 20px; display: flex; justify-content: space-between; align-items: center; }
-  .header h1 { font-size: 20px; }
+  .header h1 { font-size: 18px; }
   .header .logout { background: rgba(255,255,255,0.2); border: none; color: white; padding: 8px 15px; border-radius: 8px; cursor: pointer; font-size: 14px; }
   
   .stats-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; padding: 20px; }
@@ -45,11 +45,6 @@
   .login-wrap .card h2 { margin-bottom: 20px; color: #333; }
   .btn-login { width: 100%; padding: 14px; background: #FF8200; color: white; border: none; border-radius: 8px; font-size: 16px; cursor: pointer; }
   .error { color: #e74c3c; text-align: center; margin-top: 10px; display: none; font-size: 14px; }
-
-  .alert-row { background: #fff3cd; border-left: 4px solid #ffc107; padding: 12px; border-radius: 0 8px 8px 0; margin-bottom: 8px; }
-  .alert-row .alert-title { font-size: 14px; font-weight: bold; color: #856404; }
-  .alert-row .alert-detail { font-size: 12px; color: #856404; margin-top: 3px; }
-
   .loading { text-align: center; padding: 30px; color: #999; }
 </style>
 </head>
@@ -60,21 +55,20 @@
 <script>
 const API = 'https://mamaja-member-api.renechen188.workers.dev';
 let currentTab = 'overview';
-let allMembers = [];
 
 function showLogin() {
   document.getElementById('app').innerHTML = `
     <div style="background:linear-gradient(135deg,#cc6600,#FF8200);padding:40px 20px;text-align:center;color:white;">
       <h1 style="font-size:22px;">🍲 麻媽家</h1>
-      <p style="opacity:0.8;margin-top:5px;">老闆管理後台</p>
+      <p style="opacity:0.8;margin-top:5px;">LINE 會員管理後台</p>
     </div>
     <div class="login-wrap">
       <div class="card">
-        <h2>登入</h2>
+        <h2>管理員登入</h2>
         <input type="text" id="username" placeholder="帳號">
         <input type="password" id="password" placeholder="密碼">
         <button class="btn-login" onclick="login()">登入</button>
-        <div class="error" id="err">帳號或密碼錯誤</div>
+        <div class="error" id="err">帳號或密碼錯誤，或權限不足</div>
       </div>
     </div>
   `;
@@ -90,16 +84,16 @@ async function login() {
   });
   const data = await res.json();
   if (data.success && data.staff.role === 'admin') {
-    showAdmin();
+    showAdmin(data.staff);
   } else {
     document.getElementById('err').style.display = 'block';
   }
 }
 
-async function showAdmin() {
+async function showAdmin(staff) {
   document.getElementById('app').innerHTML = `
     <div class="header">
-      <h1>🍲 麻媽家 管理後台</h1>
+      <h1>🍲 麻媽家 LINE 會員管理後台</h1>
       <button class="logout" onclick="showLogin()">登出</button>
     </div>
     <div class="tab" style="margin-top:20px;">
@@ -171,9 +165,9 @@ async function loadMembers() {
   document.getElementById('tab-content').innerHTML = '<div class="loading">載入中...</div>';
   const res = await fetch(`${API}/api/admin/members`);
   const data = await res.json();
-  allMembers = data.members || [];
+  const members = data.members || [];
 
-  const memberHTML = allMembers.map(m => `
+  const memberHTML = members.map(m => `
     <div class="member-row">
       <div class="info">
         <div class="name">${m.name || '未命名'}</div>
@@ -185,7 +179,7 @@ async function loadMembers() {
 
   document.getElementById('tab-content').innerHTML = `
     <div class="section">
-      <h2>所有會員（${allMembers.length} 人）</h2>
+      <h2>所有會員（${members.length} 人）</h2>
       <div class="card">${memberHTML || '<p style="color:#999;text-align:center;padding:20px;">尚無會員</p>'}</div>
     </div>
   `;
