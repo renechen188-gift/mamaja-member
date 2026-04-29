@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>麻媽家 老闆後台</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Noto Sans TC', sans-serif; background: #f5f5f5; min-height: 100vh; }
+  .header { background: linear-gradient(135deg, #cc6600, #FF8200); color: white; padding: 20px; display: flex; justify-content: space-between; align-items: center; }
+  .header h1 { font-size: 20px; }
+  .header .logout { background: rgba(255,255,255,0.2); border: none; color: white; padding: 8px 15px; border-radius: 8px; cursor: pointer; font-size: 14px; }
+  
+  .stats-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; padding: 20px; }
+  .stat-card { background: white; border-radius: 12px; padding: 20px; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+  .stat-card .num { font-size: 36px; font-weight: bold; color: #FF8200; }
+  .stat-card .label { font-size: 13px; color: #999; margin-top: 5px; }
+
+  .section { padding: 0 20px 20px; }
+  .section h2 { font-size: 16px; color: #333; margin-bottom: 12px; font-weight: bold; }
+  
+  .card { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin-bottom: 15px; }
+  
+  input, select { width: 100%; padding: 11px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; margin-bottom: 10px; }
+  .btn { padding: 11px 20px; border: none; border-radius: 8px; font-size: 14px; cursor: pointer; color: white; }
+  .btn-primary { background: #FF8200; }
+  .btn-export { background: #27ae60; width: 100%; padding: 13px; font-size: 15px; }
+
+  .tab { display: flex; background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin: 0 20px 20px; }
+  .tab-btn { flex: 1; padding: 13px 5px; border: none; background: white; cursor: pointer; font-size: 13px; }
+  .tab-btn.active { background: #FF8200; color: white; }
+
+  .member-row { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #f0f0f0; }
+  .member-row:last-child { border-bottom: none; }
+  .member-row .info .name { font-size: 15px; font-weight: bold; color: #333; }
+  .member-row .info .detail { font-size: 12px; color: #999; margin-top: 3px; }
+  .member-row .pts { font-size: 20px; font-weight: bold; color: #FF8200; }
+
+  .store-row { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #f0f0f0; }
+  .store-row:last-child { border-bottom: none; }
+  .store-row .name { font-size: 15px; color: #333; }
+  .store-row .count { font-size: 18px; font-weight: bold; color: #FF8200; }
+
+  .login-wrap { max-width: 400px; margin: 80px auto; padding: 0 20px; }
+  .login-wrap .card h2 { margin-bottom: 20px; color: #333; }
+  .btn-login { width: 100%; padding: 14px; background: #FF8200; color: white; border: none; border-radius: 8px; font-size: 16px; cursor: pointer; }
+  .error { color: #e74c3c; text-align: center; margin-top: 10px; display: none; font-size: 14px; }
+
+  .alert-row { background: #fff3cd; border-left: 4px solid #ffc107; padding: 12px; border-radius: 0 8px 8px 0; margin-bottom: 8px; }
+  .alert-row .alert-title { font-size: 14px; font-weight: bold; color: #856404; }
+  .alert-row .alert-detail { font-size: 12px; color: #856404; margin-top: 3px; }
+
+  .loading { text-align: center; padding: 30px; color: #999; }
+</style>
+</head>
+<body>
+
+<div id="app"><div class="loading">載入中...</div></div>
+
+<script>
+const API = 'https://mamaja-member-api.renechen188.workers.dev';
+let currentTab = 'overview';
+let allMembers = [];
+
+function showLogin() {
+  document.getElementById('app').innerHTML = `
+    <div style="background:linear-gradient(135deg,#cc6600,#FF8200);padding:40px 20px;text-align:center;color:white;">
+      <h1 style="font-size:22px;">🍲 麻媽家</h1>
+      <p style="opacity:0.8;margin-top:5px;">老闆管理後台</p>
+    </div>
+    <div class="login-wrap">
+      <div class="card">
+        <h2>登入</h2>
+        <input type="text" id="username" placeholder="帳號">
+        <input type="password" id="password" placeholder="密碼">
+        <button class="btn-login" onclick="login()">登入</button>
+        <div class="error" id="err">帳號或密碼錯誤</div>
+      </div>
+    </div>
+  `;
+}
+
+async function login() {
+  const username = document.getElementById('username').value;
+  const password = document.getElementById('password').value;
+  const res = await fetch(`${API}/api/staff/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username, password })
+  });
+  const data = await res.json();
+  if (data.success && data.staff.role === 'admin') {
+    showAdmin();
+  } else {
+    document.getElementById('err').style.display = 'block';
+  }
+}
+
+async function showAdmin() {
+  document.getElementById('app').innerHTML = `
+    <div class="header">
+      <h1>🍲 麻媽家 管理後台</h1>
+      <button class="logout" onclick="showLogin()">登出</button>
+    </div>
+    <div class="tab" style="margin-top:20px;">
+      <button class="tab-btn active" onclick="switchTab('overview')" id="tab-overview">📊 總覽</button>
+      <button class="tab-btn" onclick="switchTab('members')" id="tab-members">👥 會員</button>
+      <button class="tab-btn" onclick="switchTab('search')" id="tab-search">🔍 查詢</button>
+      <button class="tab-btn" onclick="switchTab('export')" id="tab-export">📤 匯出</button>
+    </div>
+    <div id="tab-content"></div>
+  `;
+  await loadOverview();
+}
+
+async function switchTab(tab) {
+  currentTab = tab;
+  ['overview','members','search','export'].forEach(t => {
+    document.getElementById(`tab-${t}`).className = 'tab-btn' + (t === tab ? ' active' : '');
+  });
+  if (tab === 'overview') await loadOverview();
+  if (tab === 'members') await loadMembers();
+  if (tab === 'search') showSearch();
+  if (tab === 'export') showExport();
+}
+
+async function loadOverview() {
+  document.getElementById('tab-content').innerHTML = '<div class="loading">載入中...</div>';
+  const res = await fetch(`${API}/api/admin/stats`);
+  const data = await res.json();
+  
+  if (data.error) {
+    document.getElementById('tab-content').innerHTML = '<div class="loading">載入失敗</div>';
+    return;
+  }
+
+  const storeHTML = data.stores.map(s => `
+    <div class="store-row">
+      <div class="name">${s.store || '未知'}</div>
+      <div class="count">${s.count} 人</div>
+    </div>
+  `).join('');
+
+  document.getElementById('tab-content').innerHTML = `
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="num">${data.totalMembers}</div>
+        <div class="label">總會員數</div>
+      </div>
+      <div class="stat-card">
+        <div class="num">${data.totalPoints}</div>
+        <div class="label">總流通點數</div>
+      </div>
+      <div class="stat-card">
+        <div class="num">${data.todayTransactions}</div>
+        <div class="label">今日交易筆數</div>
+      </div>
+      <div class="stat-card">
+        <div class="num">NT$${data.todayAmount}</div>
+        <div class="label">今日集點金額</div>
+      </div>
+    </div>
+    <div class="section">
+      <h2>各門店會員數</h2>
+      <div class="card">${storeHTML || '<p style="color:#999">尚無資料</p>'}</div>
+    </div>
+  `;
+}
+
+async function loadMembers() {
+  document.getElementById('tab-content').innerHTML = '<div class="loading">載入中...</div>';
+  const res = await fetch(`${API}/api/admin/members`);
+  const data = await res.json();
+  allMembers = data.members || [];
+
+  const memberHTML = allMembers.map(m => `
+    <div class="member-row">
+      <div class="info">
+        <div class="name">${m.name || '未命名'}</div>
+        <div class="detail">${m.phone || '未填手機'} ｜ ${m.store || '未知門店'} ｜ ${new Date(m.created_at).toLocaleDateString('zh-TW')} 加入</div>
+      </div>
+      <div class="pts">${m.points}點</div>
+    </div>
+  `).join('');
+
+  document.getElementById('tab-content').innerHTML = `
+    <div class="section">
+      <h2>所有會員（${allMembers.length} 人）</h2>
+      <div class="card">${memberHTML || '<p style="color:#999;text-align:center;padding:20px;">尚無會員</p>'}</div>
+    </div>
+  `;
+}
+
+function showSearch() {
+  document.getElementById('tab-content').innerHTML = `
+    <div class="section" style="padding-top:20px;">
+      <div class="card">
+        <h2 style="margin-bottom:15px;">查詢會員</h2>
+        <input type="tel" id="search-phone" placeholder="輸入手機號碼">
+        <button class="btn btn-primary" onclick="searchMember()" style="width:100%">查詢</button>
+      </div>
+      <div id="search-result"></div>
+    </div>
+  `;
+}
+
+async function searchMember() {
+  const phone = document.getElementById('search-phone').value;
+  if (!phone) return;
+  const res = await fetch(`${API}/api/member/by-phone?phone=${phone}`);
+  const data = await res.json();
+  
+  if (data.error) {
+    document.getElementById('search-result').innerHTML = `<div class="card" style="text-align:center;color:#e74c3c">找不到此會員</div>`;
+    return;
+  }
+
+  const txHTML = data.transactions.map(t => `
+    <div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid #f0f0f0;">
+      <div>
+        <div style="font-size:12px;color:#999">${new Date(t.created_at).toLocaleDateString('zh-TW')} ｜ ${t.store||''} ｜ ${t.staff||''}</div>
+        <div style="font-size:14px">${t.type==='add'?`消費 NT$${t.amount}`:`兌換：${t.note||''}`}</div>
+      </div>
+      <div style="font-weight:bold;color:${t.type==='add'?'#27ae60':'#e74c3c'}">${t.type==='add'?'+':''}${t.points}點</div>
+    </div>
+  `).join('');
+
+  document.getElementById('search-result').innerHTML = `
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:15px;">
+        <div>
+          <div style="font-size:18px;font-weight:bold">${data.member.name||'未命名'}</div>
+          <div style="font-size:13px;color:#999">${data.member.phone||'未填手機'} ｜ ${data.member.store||''}</div>
+        </div>
+        <div style="font-size:28px;font-weight:bold;color:#FF8200">${data.member.points}點</div>
+      </div>
+      <h2 style="margin-bottom:10px;">消費紀錄</h2>
+      ${txHTML || '<p style="color:#999;text-align:center;padding:15px">尚無紀錄</p>'}
+    </div>
+  `;
+}
+
+function showExport() {
+  document.getElementById('tab-content').innerHTML = `
+    <div class="section" style="padding-top:20px;">
+      <div class="card">
+        <h2 style="margin-bottom:15px;">匯出會員資料</h2>
+        <p style="color:#666;font-size:14px;margin-bottom:15px;">匯出所有會員的姓名、手機、點數、加入日期</p>
+        <button class="btn btn-export" onclick="exportCSV()">📥 下載 CSV 檔案</button>
+      </div>
+    </div>
+  `;
+}
+
+async function exportCSV() {
+  const res = await fetch(`${API}/api/admin/members`);
+  const data = await res.json();
+  const members = data.members || [];
+  
+  const csv = [
+    ['姓名', '手機', '點數', '門店', '加入日期'].join(','),
+    ...members.map(m => [
+      m.name || '',
+      m.phone || '',
+      m.points,
+      m.store || '',
+      new Date(m.created_at).toLocaleDateString('zh-TW')
+    ].join(','))
+  ].join('\n');
+
+  const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `麻媽家會員_${new Date().toLocaleDateString('zh-TW')}.csv`;
+  a.click();
+}
+
+showLogin();
+</script>
+</body>
+</html>
