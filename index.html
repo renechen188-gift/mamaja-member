@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>麻媽家會員卡</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Noto Sans TC', sans-serif; background: #f5f0eb; min-height: 100vh; }
+  
+  .card { background: linear-gradient(135deg, #8B0000, #c0392b); color: white; padding: 30px 20px; text-align: center; }
+  .card h1 { font-size: 24px; margin-bottom: 5px; }
+  .card .subtitle { font-size: 13px; opacity: 0.8; }
+  .points-display { margin: 20px 0; }
+  .points-number { font-size: 64px; font-weight: bold; line-height: 1; }
+  .points-label { font-size: 14px; opacity: 0.8; margin-top: 5px; }
+  .member-name { font-size: 16px; margin-top: 15px; opacity: 0.9; }
+
+  .section { padding: 20px; }
+  .section h2 { font-size: 16px; color: #333; margin-bottom: 15px; font-weight: bold; }
+
+  .redeem-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .redeem-item { background: white; border-radius: 12px; padding: 15px; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+  .redeem-item .points-req { font-size: 22px; font-weight: bold; color: #8B0000; }
+  .redeem-item .item-name { font-size: 13px; color: #666; margin-top: 5px; }
+  .redeem-item.disabled { opacity: 0.4; }
+
+  .history-item { background: white; border-radius: 10px; padding: 15px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+  .history-item .info .date { font-size: 12px; color: #999; }
+  .history-item .info .desc { font-size: 14px; color: #333; margin-top: 3px; }
+  .history-item .pts { font-size: 18px; font-weight: bold; }
+  .history-item .pts.add { color: #27ae60; }
+  .history-item .pts.redeem { color: #e74c3c; }
+
+  .loading { text-align: center; padding: 50px; color: #999; }
+  .error-msg { text-align: center; padding: 30px; color: #e74c3c; }
+
+  .register-form { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+  .register-form input { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 15px; margin-bottom: 10px; }
+  .register-form button { width: 100%; padding: 14px; background: #8B0000; color: white; border: none; border-radius: 8px; font-size: 16px; cursor: pointer; }
+</style>
+</head>
+<body>
+
+<div id="app"><div class="loading">載入中...</div></div>
+
+<script>
+const API = 'https://mamaja-member-api.renechen188.workers.dev';
+const REWARDS = [
+  { points: 3, name: '小菜一份' },
+  { points: 5, name: '招牌飲料' },
+  { points: 7, name: '指定主食' },
+  { points: 10, name: '雙人套餐' }
+];
+
+let memberData = null;
+let lineId = null;
+
+async function init() {
+  // 取得 LINE ID（之後串 LIFF 時會自動取得，現在先用測試）
+  lineId = new URLSearchParams(location.search).get('line_id') || 'test_' + Date.now();
+  
+  try {
+    const res = await fetch(`${API}/api/member/points?line_id=${lineId}`);
+    const data = await res.json();
+    
+    if (data.error === '會員不存在') {
+      showRegister();
+    } else {
+      memberData = data;
+      showMemberCard();
+    }
+  } catch(e) {
+    document.getElementById('app').innerHTML = '<div class="error-msg">連線失敗，請重試</div>';
+  }
+}
+
+function showRegister() {
+  document.getElementById('app').innerHTML = `
+    <div class="card">
+      <h1>🍲 麻媽家</h1>
+      <div class="subtitle">會員集點系統</div>
+    </div>
+    <div class="section">
+      <h2>加入會員</h2>
+      <div class="register-form">
+        <p style="color:#666;font-size:14px;margin-bottom:15px;">輸入手機號碼完成註冊，每消費 120 元集 1 點</p>
+        <input type="tel" id="phone" placeholder="手機號碼（選填）" maxlength="10">
+        <button onclick="register()">立即加入會員</button>
+      </div>
+    </div>
+  `;
+}
+
+async function register() {
+  const phone = document.getElementById('phone').value;
+  const res = await fetch(`${API}/api/member`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ line_id: lineId, name: '會員', phone })
+  });
+  const data = await res.json();
+  if (data.id) {
+    memberData = { member: data, transactions: [] };
+    showMemberCard();
+  }
+}
+
+function showMemberCard() {
+  const { member, transactions } = memberData;
+  const pts = member.points;
+  
+  const redeemHTML = REWARDS.map(r => `
+    <div class="redeem-item ${pts < r.points ? 'disabled' : ''}">
+      <div class="points-req">${r.points}點</div>
+      <div class="item-name">${r.name}</div>
+    </div>
+  `).join('');
+
+  const historyHTML = transactions.length === 0 
+    ? '<p style="color:#999;text-align:center;padding:20px;">尚無消費紀錄</p>'
+    : transactions.map(t => `
+      <div class="history-item">
+        <div class="info">
+          <div class="date">${new Date(t.created_at).toLocaleDateString('zh-TW')} ${t.store || ''}</div>
+          <div class="desc">${t.type === 'add' ? `消費 NT$${t.amount}` : `兌換：${t.note || ''}`}</div>
+        </div>
+        <div class="pts ${t.type}">${t.type === 'add' ? '+' : ''}${t.points} 點</div>
+      </div>
+    `).join('');
+
+  document.getElementById('app').innerHTML = `
+    <div class="card">
+      <h1>🍲 麻媽家會員卡</h1>
+      <div class="subtitle">每消費 120 元集 1 點</div>
+      <div class="points-display">
+        <div class="points-number">${pts}</div>
+        <div class="points-label">累積點數</div>
+      </div>
+      <div class="member-name">📱 ${member.phone || '會員'}</div>
+    </div>
+    <div class="section">
+      <h2>🎁 點數兌換</h2>
+      <div class="redeem-grid">${redeemHTML}</div>
+    </div>
+    <div class="section">
+      <h2>📋 消費紀錄</h2>
+      ${historyHTML}
+    </div>
+  `;
+}
+
+init();
+</script>
+</body>
+</html>
