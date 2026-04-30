@@ -2,224 +2,686 @@
 <html lang="zh-TW">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>麻媽家會員卡</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>麻媽家 會員中心</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { font-family: 'Noto Sans TC', sans-serif; background: #fff8f2; min-height: 100vh; }
-  
-  .card { background: linear-gradient(135deg, #cc6600, #FF8200); color: white; padding: 30px 20px; text-align: center; }
-  .card h1 { font-size: 24px; margin-bottom: 5px; }
-  .card .subtitle { font-size: 13px; opacity: 0.8; }
-  .points-display { margin: 20px 0; }
-  .points-number { font-size: 64px; font-weight: bold; line-height: 1; }
-  .points-label { font-size: 14px; opacity: 0.8; margin-top: 5px; }
-  .member-name { font-size: 16px; margin-top: 15px; opacity: 0.9; }
+  :root {
+    --orange: #F47B20;
+    --orange-dark: #C45500;
+    --orange-light: #FFF3E8;
+    --cream: #F5F0EB;
+    --text: #2A1A00;
+    --muted: #8A7A6A;
+    --border: #EDE5DC;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; background: var(--cream); }
+  body { font-family: 'Noto Sans TC', sans-serif; max-width: 480px; margin: 0 auto; min-height: 100vh; }
 
-  .section { padding: 20px; }
-  .section h2 { font-size: 16px; color: #333; margin-bottom: 15px; font-weight: bold; }
+  /* HEADER */
+  .header {
+    background: var(--orange);
+    padding: 16px 20px 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .header-logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .logo-circle {
+    width: 44px; height: 44px;
+    background: white;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    overflow: hidden;
+    flex-shrink: 0;
+  }
+  .logo-circle span {
+    font-family: 'Noto Serif TC';
+    font-size: 20px; font-weight: 700;
+    color: var(--orange);
+  }
+  .logo-text-main {
+    font-family: 'Noto Serif TC';
+    color: white; font-size: 20px; font-weight: 700;
+    letter-spacing: 2px;
+  }
+  .logo-text-sub {
+    color: rgba(255,255,255,0.65);
+    font-size: 10px; letter-spacing: 2px;
+    margin-top: 2px;
+  }
+  .header-member {
+    text-align: right;
+  }
+  .header-member-label {
+    color: rgba(255,255,255,0.65);
+    font-size: 10px; margin-bottom: 2px;
+  }
+  .header-member-name {
+    color: white; font-size: 14px; font-weight: 700;
+  }
 
-  .coupon-item { background: white; border-radius: 12px; margin-bottom: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.08); display: flex; }
-  .coupon-left { background: linear-gradient(135deg, #cc6600, #FF8200); color: white; padding: 15px 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; min-width: 80px; }
-  .coupon-left .amount { font-size: 22px; font-weight: bold; line-height: 1; }
-  .coupon-left .unit { font-size: 11px; opacity: 0.85; margin-top: 3px; }
-  .coupon-right { padding: 14px 15px; flex: 1; }
-  .coupon-right .title { font-size: 15px; font-weight: bold; color: #333; }
-  .coupon-right .desc { font-size: 12px; color: #999; margin-top: 4px; }
-  .coupon-right .expire { font-size: 11px; color: #bbb; margin-top: 6px; }
-  .coupon-right .code { font-size: 13px; color: #FF8200; font-weight: bold; margin-top: 6px; background: #fff8f2; padding: 4px 10px; border-radius: 6px; display: inline-block; letter-spacing: 2px; }
-  .coupon-item.used { opacity: 0.4; }
-  .coupon-item.used .coupon-left { background: #ccc; }
-  .coupon-used-badge { font-size: 11px; background: #eee; color: #999; padding: 2px 8px; border-radius: 10px; margin-top: 6px; display: inline-block; }
+  /* TAB BAR */
+  .tab-bar {
+    background: white;
+    display: flex;
+    border-bottom: 1.5px solid var(--cream);
+    position: sticky;
+    top: 74px;
+    z-index: 99;
+  }
+  .tab {
+    flex: 1; text-align: center;
+    padding: 13px 0;
+    font-size: 13px; color: #B0A090;
+    cursor: pointer;
+    border-bottom: 2.5px solid transparent;
+    margin-bottom: -1.5px;
+    transition: all 0.2s;
+  }
+  .tab.active {
+    color: var(--orange);
+    font-weight: 700;
+    border-bottom-color: var(--orange);
+  }
 
-  .redeem-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-  .redeem-item { background: white; border-radius: 12px; padding: 15px; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
-  .redeem-item .points-req { font-size: 22px; font-weight: bold; color: #FF8200; }
-  .redeem-item .item-name { font-size: 13px; color: #666; margin-top: 5px; }
-  .redeem-item.disabled { opacity: 0.4; }
+  /* TAB CONTENT */
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
 
-  .history-item { background: white; border-radius: 10px; padding: 15px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
-  .history-item .info .date { font-size: 12px; color: #999; }
-  .history-item .info .desc { font-size: 14px; color: #333; margin-top: 3px; }
-  .history-item .pts { font-size: 18px; font-weight: bold; }
-  .history-item .pts.add { color: #27ae60; }
-  .history-item .pts.redeem { color: #e74c3c; }
+  /* COUPON PAGE */
+  .coupon-filter {
+    padding: 14px 16px 8px;
+    display: flex; gap: 8px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .coupon-filter::-webkit-scrollbar { display: none; }
+  .filter-btn {
+    background: white;
+    color: #B0A090;
+    font-size: 12px; font-weight: 500;
+    padding: 6px 16px;
+    border-radius: 20px;
+    border: 1px solid var(--border);
+    white-space: nowrap;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .filter-btn.active {
+    background: var(--orange);
+    color: white;
+    border-color: var(--orange);
+    font-weight: 700;
+  }
 
-  .loading { text-align: center; padding: 50px; color: #999; }
-  .error-msg { text-align: center; padding: 30px; color: #e74c3c; }
+  .coupon-list {
+    padding: 6px 16px 100px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
 
-  .register-form { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
-  .register-form input { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 15px; margin-bottom: 10px; }
-  .register-form button { width: 100%; padding: 14px; background: #FF8200; color: white; border: none; border-radius: 8px; font-size: 16px; cursor: pointer; }
+  /* COUPON CARD */
+  .coupon-card {
+    background: white;
+    border-radius: 16px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+  }
+  .coupon-top {
+    padding: 16px 20px 14px;
+    position: relative;
+  }
+  .coupon-top.orange { background: var(--orange); }
+  .coupon-top.dark { background: var(--orange-dark); }
+  .coupon-label {
+    color: rgba(255,255,255,0.7);
+    font-size: 10px; letter-spacing: 2px;
+    margin-bottom: 6px;
+  }
+  .coupon-amount {
+    color: white;
+    font-family: 'Noto Serif TC';
+    font-size: 38px; font-weight: 700;
+    line-height: 1;
+  }
+  .coupon-amount span {
+    font-size: 16px; font-weight: 500;
+    vertical-align: bottom; margin-left: 4px;
+  }
+  .coupon-amount.discount {
+    font-size: 30px;
+  }
+  .coupon-status-badge {
+    position: absolute;
+    top: 16px; right: 18px;
+    background: rgba(255,255,255,0.2);
+    border: 1px solid rgba(255,255,255,0.4);
+    padding: 5px 12px; border-radius: 20px;
+    color: white; font-size: 11px;
+  }
+  .coupon-divider {
+    height: 1px;
+    background: repeating-linear-gradient(90deg, var(--border) 0, var(--border) 6px, transparent 6px, transparent 12px);
+    margin: 0 16px;
+    position: relative;
+  }
+  .coupon-divider::before, .coupon-divider::after {
+    content: '';
+    position: absolute;
+    top: -10px;
+    width: 20px; height: 20px;
+    background: var(--cream);
+    border-radius: 50%;
+  }
+  .coupon-divider::before { left: -26px; }
+  .coupon-divider::after { right: -26px; }
 
-  .empty { text-align: center; padding: 20px; color: #999; font-size: 14px; }
+  .coupon-bottom {
+    padding: 13px 20px 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .coupon-info-main {
+    font-size: 12px; color: var(--muted);
+    margin-bottom: 3px;
+  }
+  .coupon-info-expire {
+    font-size: 11px; color: #C0B0A0;
+  }
+  .use-btn {
+    background: var(--orange);
+    color: white;
+    font-size: 13px; font-weight: 700;
+    padding: 9px 20px;
+    border-radius: 22px;
+    border: none;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: transform 0.1s, opacity 0.1s;
+    -webkit-appearance: none;
+  }
+  .use-btn:active { transform: scale(0.96); opacity: 0.9; }
+
+  /* USED / EXPIRED STATE */
+  .coupon-card.used .coupon-top,
+  .coupon-card.expired .coupon-top {
+    filter: grayscale(1);
+    opacity: 0.55;
+  }
+  .coupon-card.used .coupon-bottom,
+  .coupon-card.expired .coupon-bottom {
+    opacity: 0.5;
+  }
+  .used-badge {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%) rotate(-20deg);
+    border: 3px solid rgba(255,255,255,0.6);
+    color: rgba(255,255,255,0.7);
+    font-size: 22px; font-weight: 900;
+    padding: 4px 12px;
+    border-radius: 4px;
+    letter-spacing: 4px;
+    pointer-events: none;
+  }
+
+  /* EMPTY STATE */
+  .empty-card {
+    background: white;
+    border-radius: 16px;
+    border: 1.5px dashed #E0D8D0;
+    padding: 36px;
+    text-align: center;
+  }
+  .empty-icon {
+    font-size: 36px; margin-bottom: 12px; opacity: 0.25;
+  }
+  .empty-text {
+    font-size: 14px; color: #C0B0A0; font-weight: 500;
+    margin-bottom: 4px;
+  }
+  .empty-sub {
+    font-size: 12px; color: #D0C8C0;
+  }
+
+  /* NOTICE BAR */
+  .notice-bar {
+    margin: 0 16px 24px;
+    background: var(--orange-light);
+    border-radius: 10px;
+    padding: 12px 16px;
+    border-left: 3px solid var(--orange);
+    font-size: 12px;
+    color: #7A4010;
+    line-height: 1.7;
+  }
+
+  /* HISTORY TAB */
+  .history-list {
+    padding: 12px 16px 100px;
+    display: flex; flex-direction: column; gap: 0;
+  }
+  .history-item {
+    background: white;
+    padding: 14px 18px;
+    display: flex; align-items: center; gap: 14px;
+    border-bottom: 0.5px solid var(--border);
+  }
+  .history-item:first-child { border-radius: 16px 16px 0 0; }
+  .history-item:last-child { border-radius: 0 0 16px 16px; border-bottom: none; }
+  .history-icon {
+    width: 38px; height: 38px;
+    background: var(--orange-light);
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; flex-shrink: 0;
+  }
+  .history-store { font-size: 13px; font-weight: 500; color: var(--text); }
+  .history-date { font-size: 11px; color: #B0A090; margin-top: 3px; }
+  .history-amount {
+    margin-left: auto; text-align: right;
+  }
+  .history-price {
+    font-size: 15px; font-weight: 700; color: var(--orange);
+  }
+  .history-note {
+    font-size: 11px; color: #B0A090; margin-top: 3px;
+  }
+
+  /* PROFILE TAB */
+  .profile-section {
+    padding: 16px 16px 100px;
+    display: flex; flex-direction: column; gap: 12px;
+  }
+  .profile-card {
+    background: white;
+    border-radius: 16px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+  }
+  .profile-card-header {
+    padding: 14px 18px;
+    background: var(--orange-light);
+    font-size: 12px; font-weight: 700;
+    color: var(--orange-dark);
+    letter-spacing: 1px;
+  }
+  .profile-row {
+    padding: 13px 18px;
+    display: flex; justify-content: space-between; align-items: center;
+    border-bottom: 0.5px solid var(--border);
+    font-size: 14px;
+  }
+  .profile-row:last-child { border-bottom: none; }
+  .profile-row-label { color: var(--muted); }
+  .profile-row-value { color: var(--text); font-weight: 500; }
+  .profile-row-edit {
+    color: var(--orange); font-size: 12px; cursor: pointer;
+  }
+
+  /* USE MODAL */
+  .modal-overlay {
+    display: none;
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 200;
+    align-items: flex-end;
+    justify-content: center;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: white;
+    border-radius: 24px 24px 0 0;
+    padding: 28px 24px 40px;
+    width: 100%; max-width: 480px;
+    animation: slideUp 0.3s ease;
+  }
+  @keyframes slideUp {
+    from { transform: translateY(100%); }
+    to { transform: translateY(0); }
+  }
+  .modal-title {
+    font-family: 'Noto Serif TC';
+    font-size: 20px; font-weight: 700;
+    color: var(--text); margin-bottom: 6px;
+  }
+  .modal-sub {
+    font-size: 13px; color: var(--muted); margin-bottom: 24px;
+  }
+  .modal-code-box {
+    background: var(--orange-light);
+    border: 1.5px dashed var(--orange);
+    border-radius: 14px;
+    padding: 24px;
+    text-align: center;
+    margin-bottom: 20px;
+  }
+  .modal-code {
+    font-size: 40px; font-weight: 900;
+    color: var(--orange);
+    letter-spacing: 8px;
+    font-family: monospace;
+  }
+  .modal-code-hint {
+    font-size: 12px; color: var(--muted); margin-top: 10px;
+  }
+  .modal-expire {
+    text-align: center;
+    font-size: 12px; color: #C0B0A0;
+    margin-bottom: 24px;
+  }
+  .modal-close {
+    width: 100%;
+    background: var(--orange);
+    color: white; font-size: 15px; font-weight: 700;
+    padding: 14px;
+    border-radius: 30px; border: none;
+    cursor: pointer;
+    font-family: 'Noto Sans TC';
+  }
+  .modal-close:active { opacity: 0.9; }
 </style>
-<script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 </head>
 <body>
 
-<div id="app"><div class="loading">載入中...</div></div>
+<!-- HEADER -->
+<div class="header">
+  <div class="header-logo">
+    <div class="logo-circle">
+      <span>家</span>
+    </div>
+    <div>
+      <div class="logo-text-main">麻媽家</div>
+      <div class="logo-text-sub">MAMAJIA · 安心實惠</div>
+    </div>
+  </div>
+  <div class="header-member">
+    <div class="header-member-label">會員</div>
+    <div class="header-member-name" id="memberName">王小明</div>
+  </div>
+</div>
+
+<!-- TAB BAR -->
+<div class="tab-bar">
+  <div class="tab active" onclick="switchTab('coupon')">優惠券</div>
+  <div class="tab" onclick="switchTab('history')">消費紀錄</div>
+  <div class="tab" onclick="switchTab('profile')">個人設定</div>
+</div>
+
+<!-- TAB: 優惠券 -->
+<div class="tab-content active" id="tab-coupon">
+
+  <div class="coupon-filter">
+    <div class="filter-btn active" onclick="filterCoupon('usable', this)">可使用 (2)</div>
+    <div class="filter-btn" onclick="filterCoupon('used', this)">已使用 (3)</div>
+    <div class="filter-btn" onclick="filterCoupon('expired', this)">已過期 (1)</div>
+  </div>
+
+  <!-- 可使用 -->
+  <div class="coupon-list" id="list-usable">
+
+    <div class="coupon-card">
+      <div class="coupon-top orange">
+        <div class="coupon-label">折扣優惠券</div>
+        <div class="coupon-amount">$50 <span>折抵</span></div>
+        <div class="coupon-status-badge">未使用</div>
+      </div>
+      <div class="coupon-divider"></div>
+      <div class="coupon-bottom">
+        <div>
+          <div class="coupon-info-main">滿 NT$250 可用　全門市通用</div>
+          <div class="coupon-info-expire">有效期限：2025/12/31</div>
+        </div>
+        <button class="use-btn" onclick="showModal('$50 折抵優惠券', '出示此頁面給店員確認')">立即使用</button>
+      </div>
+    </div>
+
+    <div class="coupon-card">
+      <div class="coupon-top dark">
+        <div class="coupon-label">生日專屬優惠</div>
+        <div class="coupon-amount discount">9折 <span>全單折扣</span></div>
+        <div class="coupon-status-badge">未使用</div>
+      </div>
+      <div class="coupon-divider"></div>
+      <div class="coupon-bottom">
+        <div>
+          <div class="coupon-info-main">生日當月使用　全門市通用</div>
+          <div class="coupon-info-expire">有效期限：2025/11/30</div>
+        </div>
+        <button class="use-btn" onclick="showModal('生日優惠 9折', '生日當月全單9折，出示給店員確認')">立即使用</button>
+      </div>
+    </div>
+
+    <div class="notice-bar">
+      使用方式：點擊「立即使用」出示驗證碼給店員核銷，每次消費限用一張，核銷後無法復原。
+    </div>
+
+  </div>
+
+  <!-- 已使用 -->
+  <div class="coupon-list" id="list-used" style="display:none;">
+
+    <div class="coupon-card used">
+      <div class="coupon-top orange" style="position:relative;">
+        <div class="coupon-label">折扣優惠券</div>
+        <div class="coupon-amount">$50 <span>折抵</span></div>
+        <div class="used-badge">已使用</div>
+      </div>
+      <div class="coupon-divider"></div>
+      <div class="coupon-bottom">
+        <div>
+          <div class="coupon-info-main">信義店　2025/10/15 使用</div>
+          <div class="coupon-info-expire">已於消費時折抵</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="coupon-card used">
+      <div class="coupon-top orange" style="position:relative;">
+        <div class="coupon-label">折扣優惠券</div>
+        <div class="coupon-amount">$30 <span>折抵</span></div>
+        <div class="used-badge">已使用</div>
+      </div>
+      <div class="coupon-divider"></div>
+      <div class="coupon-bottom">
+        <div>
+          <div class="coupon-info-main">內湖店　2025/09/20 使用</div>
+          <div class="coupon-info-expire">已於消費時折抵</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="coupon-card used">
+      <div class="coupon-top dark" style="position:relative;">
+        <div class="coupon-label">新會員優惠</div>
+        <div class="coupon-amount">85折 <span>全單</span></div>
+        <div class="used-badge">已使用</div>
+      </div>
+      <div class="coupon-divider"></div>
+      <div class="coupon-bottom">
+        <div>
+          <div class="coupon-info-main">信義店　2025/10/01 使用</div>
+          <div class="coupon-info-expire">加入會員首次消費折扣</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- 已過期 -->
+  <div class="coupon-list" id="list-expired" style="display:none;">
+
+    <div class="coupon-card expired">
+      <div class="coupon-top orange" style="position:relative;">
+        <div class="coupon-label">季度優惠券</div>
+        <div class="coupon-amount">$80 <span>折抵</span></div>
+        <div class="used-badge">已過期</div>
+      </div>
+      <div class="coupon-divider"></div>
+      <div class="coupon-bottom">
+        <div>
+          <div class="coupon-info-main">滿 NT$350 可用</div>
+          <div class="coupon-info-expire">有效期限：2025/09/30（已過期）</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="empty-card">
+      <div class="empty-icon">🎫</div>
+      <div class="empty-text">更多優惠隨時推出</div>
+      <div class="empty-sub">請留意門市公告與 LINE 通知</div>
+    </div>
+
+  </div>
+
+</div>
+
+<!-- TAB: 消費紀錄 -->
+<div class="tab-content" id="tab-history">
+  <div class="history-list">
+    <div class="history-item">
+      <div class="history-icon">🍲</div>
+      <div>
+        <div class="history-store">信義店消費</div>
+        <div class="history-date">2025/10/15</div>
+      </div>
+      <div class="history-amount">
+        <div class="history-price">NT$280</div>
+        <div class="history-note">折抵後</div>
+      </div>
+    </div>
+    <div class="history-item">
+      <div class="history-icon">🍜</div>
+      <div>
+        <div class="history-store">信義店消費</div>
+        <div class="history-date">2025/10/08</div>
+      </div>
+      <div class="history-amount">
+        <div class="history-price">NT$150</div>
+        <div class="history-note"></div>
+      </div>
+    </div>
+    <div class="history-item">
+      <div class="history-icon">🥘</div>
+      <div>
+        <div class="history-store">內湖店消費</div>
+        <div class="history-date">2025/10/01</div>
+      </div>
+      <div class="history-amount">
+        <div class="history-price">NT$320</div>
+        <div class="history-note">首次消費</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TAB: 個人設定 -->
+<div class="tab-content" id="tab-profile">
+  <div class="profile-section">
+    <div class="profile-card">
+      <div class="profile-card-header">基本資料</div>
+      <div class="profile-row">
+        <span class="profile-row-label">姓名</span>
+        <span class="profile-row-value">王小明</span>
+      </div>
+      <div class="profile-row">
+        <span class="profile-row-label">手機號碼</span>
+        <span>
+          <span class="profile-row-value">0912-345-678</span>
+        </span>
+      </div>
+      <div class="profile-row">
+        <span class="profile-row-label">生日</span>
+        <span>
+          <span class="profile-row-value" style="color:#C0B0A0;">未填寫</span>
+          <span class="profile-row-edit" style="margin-left:10px;">填寫 →</span>
+        </span>
+      </div>
+      <div class="profile-row">
+        <span class="profile-row-label">加入門市</span>
+        <span class="profile-row-value">麻媽家 信義店</span>
+      </div>
+      <div class="profile-row">
+        <span class="profile-row-label">加入日期</span>
+        <span class="profile-row-value">2025/10/01</span>
+      </div>
+    </div>
+
+    <div class="notice-bar" style="margin:0;">
+      填寫生日後，生日當月自動發放 9折優惠券，到期前透過 LINE 通知提醒。
+    </div>
+  </div>
+</div>
+
+<!-- USE MODAL -->
+<div class="modal-overlay" id="modal" onclick="closeModal(event)">
+  <div class="modal">
+    <div class="modal-title" id="modal-title">$50 折抵優惠券</div>
+    <div class="modal-sub" id="modal-sub">出示此頁面給店員確認核銷</div>
+    <div class="modal-code-box">
+      <div class="modal-code" id="modal-code">A3F7</div>
+      <div class="modal-code-hint">請店員輸入此驗證碼完成核銷</div>
+    </div>
+    <div class="modal-expire" id="modal-expire"></div>
+    <button class="modal-close" onclick="closeModalDirect()">關閉</button>
+  </div>
+</div>
 
 <script>
-const API = 'https://mamaja-member-api.renechen188.workers.dev';
-const REWARDS = [
-  { points: 3, name: '小菜一份' },
-  { points: 5, name: '招牌飲料' },
-  { points: 7, name: '指定主食' },
-  { points: 10, name: '雙人套餐' }
-];
-
-let memberData = null;
-let lineId = null;
-
-async function init() {
-  await liff.init({ liffId: '2006569520-JIW00lVU' });
-  
-  if (!liff.isLoggedIn()) {
-    liff.login();
-    return;
-  }
-  
-  const profile = await liff.getProfile();
-  lineId = profile.userId;
-  
-  try {
-    const res = await fetch(`${API}/api/member/points?line_id=${lineId}`);
-    const data = await res.json();
-    
-    if (data.error === '會員不存在') {
-      showRegister();
-    } else {
-      memberData = data;
-      showMemberCard();
-    }
-  } catch(e) {
-    document.getElementById('app').innerHTML = '<div class="error-msg">連線失敗，請重試</div>';
-  }
-}
-
-function showRegister() {
-  document.getElementById('app').innerHTML = `
-    <div class="card">
-      <h1>🍲 麻媽家</h1>
-      <div class="subtitle">會員集點系統</div>
-    </div>
-    <div class="section">
-      <h2>加入會員</h2>
-      <div class="register-form">
-        <p style="color:#666;font-size:14px;margin-bottom:15px;">輸入手機號碼完成註冊，加入即享三張入會禮券！</p>
-        <input type="tel" id="phone" placeholder="手機號碼（必填）" maxlength="10">
-        <button onclick="register()">立即加入會員</button>
-      </div>
-    </div>
-  `;
-}
-
-async function register() {
-  const phone = document.getElementById('phone').value;
-  if (!phone) { alert('請輸入手機號碼'); return; }
-  
-  const profile = await liff.getProfile();
-  const res = await fetch(`${API}/api/member`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ line_id: lineId, name: profile.displayName, phone })
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach((t,i) => {
+    const names = ['coupon','history','profile'];
+    t.classList.toggle('active', names[i] === name);
   });
-  const data = await res.json();
-  if (data.id) {
-    const res2 = await fetch(`${API}/api/member/points?line_id=${lineId}`);
-    memberData = await res2.json();
-    showMemberCard();
-  }
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
 }
 
-function showMemberCard() {
-  const { member, transactions, coupons } = memberData;
-  const pts = member.points;
-
-  // 優惠券
-  const activeCoupons = (coupons || []).filter(c => c.status === 'active');
-  const usedCoupons = (coupons || []).filter(c => c.status === 'used');
-
-  const couponHTML = activeCoupons.length === 0 && usedCoupons.length === 0
-    ? '<div class="empty">目前沒有優惠券</div>'
-    : [
-        ...activeCoupons.map(c => `
-          <div class="coupon-item">
-            <div class="coupon-left">
-              <div class="amount">NT$${c.discount}</div>
-              <div class="unit">折抵</div>
-            </div>
-            <div class="coupon-right">
-              <div class="title">${c.title}</div>
-              <div class="desc">${c.description || ''}</div>
-              <div class="expire">有效期限：${new Date(c.expires_at).toLocaleDateString('zh-TW')}</div>
-              <div class="code">核銷碼：${c.code}</div>
-            </div>
-          </div>
-        `),
-        ...usedCoupons.map(c => `
-          <div class="coupon-item used">
-            <div class="coupon-left">
-              <div class="amount">NT$${c.discount}</div>
-              <div class="unit">折抵</div>
-            </div>
-            <div class="coupon-right">
-              <div class="title">${c.title}</div>
-              <div class="desc">${c.description || ''}</div>
-              <div class="coupon-used-badge">✅ 已使用</div>
-            </div>
-          </div>
-        `)
-      ].join('');
-
-  // 點數兌換
-  const redeemHTML = REWARDS.map(r => `
-    <div class="redeem-item ${pts < r.points ? 'disabled' : ''}">
-      <div class="points-req">${r.points}點</div>
-      <div class="item-name">${r.name}</div>
-    </div>
-  `).join('');
-
-  // 消費紀錄
-  const historyHTML = transactions.length === 0 
-    ? '<div class="empty">尚無消費紀錄</div>'
-    : transactions.map(t => `
-      <div class="history-item">
-        <div class="info">
-          <div class="date">${new Date(t.created_at).toLocaleDateString('zh-TW')} ${t.store || ''}</div>
-          <div class="desc">${t.type === 'add' ? `消費 NT$${t.amount}` : `兌換：${t.note || ''}`}</div>
-        </div>
-        <div class="pts ${t.type}">${t.type === 'add' ? '+' : ''}${t.points} 點</div>
-      </div>
-    `).join('');
-
-  document.getElementById('app').innerHTML = `
-    <div class="card">
-      <h1>🍲 麻媽家會員卡</h1>
-      <div class="subtitle">每消費 120 元集 1 點</div>
-      <div class="points-display">
-        <div class="points-number">${pts}</div>
-        <div class="points-label">累積點數</div>
-      </div>
-      <div class="member-name">👤 ${member.name || ''} ${member.phone ? '📱 ' + member.phone : ''}</div>
-    </div>
-    <div class="section">
-      <h2>🎁 我的優惠券（${activeCoupons.length} 張可用）</h2>
-      ${couponHTML}
-    </div>
-    <div class="section">
-      <h2>⭐ 點數兌換</h2>
-      <div class="redeem-grid">${redeemHTML}</div>
-    </div>
-    <div class="section">
-      <h2>📋 消費紀錄</h2>
-      ${historyHTML}
-    </div>
-  `;
+function filterCoupon(type, btn) {
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  ['usable','used','expired'].forEach(t => {
+    document.getElementById('list-' + t).style.display = t === type ? 'flex' : 'none';
+  });
 }
 
-init();
+function generateCode() {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let code = '';
+  for (let i = 0; i < 4; i++) code += chars[Math.floor(Math.random() * chars.length)];
+  return code;
+}
+
+function showModal(title, sub) {
+  document.getElementById('modal-title').textContent = title;
+  document.getElementById('modal-sub').textContent = sub;
+  document.getElementById('modal-code').textContent = generateCode();
+  const now = new Date();
+  const expire = new Date(now.getTime() + 10 * 60 * 1000);
+  document.getElementById('modal-expire').textContent =
+    '驗證碼有效至 ' + expire.getHours() + ':' + String(expire.getMinutes()).padStart(2,'0');
+  document.getElementById('modal').classList.add('open');
+}
+
+function closeModal(e) {
+  if (e.target.id === 'modal') closeModalDirect();
+}
+function closeModalDirect() {
+  document.getElementById('modal').classList.remove('open');
+}
 </script>
 </body>
 </html>
