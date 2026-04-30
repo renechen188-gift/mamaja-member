@@ -19,6 +19,19 @@
   .section { padding: 20px; }
   .section h2 { font-size: 16px; color: #333; margin-bottom: 15px; font-weight: bold; }
 
+  .coupon-item { background: white; border-radius: 12px; margin-bottom: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.08); display: flex; }
+  .coupon-left { background: linear-gradient(135deg, #cc6600, #FF8200); color: white; padding: 15px 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; min-width: 80px; }
+  .coupon-left .amount { font-size: 22px; font-weight: bold; line-height: 1; }
+  .coupon-left .unit { font-size: 11px; opacity: 0.85; margin-top: 3px; }
+  .coupon-right { padding: 14px 15px; flex: 1; }
+  .coupon-right .title { font-size: 15px; font-weight: bold; color: #333; }
+  .coupon-right .desc { font-size: 12px; color: #999; margin-top: 4px; }
+  .coupon-right .expire { font-size: 11px; color: #bbb; margin-top: 6px; }
+  .coupon-right .code { font-size: 13px; color: #FF8200; font-weight: bold; margin-top: 6px; background: #fff8f2; padding: 4px 10px; border-radius: 6px; display: inline-block; letter-spacing: 2px; }
+  .coupon-item.used { opacity: 0.4; }
+  .coupon-item.used .coupon-left { background: #ccc; }
+  .coupon-used-badge { font-size: 11px; background: #eee; color: #999; padding: 2px 8px; border-radius: 10px; margin-top: 6px; display: inline-block; }
+
   .redeem-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
   .redeem-item { background: white; border-radius: 12px; padding: 15px; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
   .redeem-item .points-req { font-size: 22px; font-weight: bold; color: #FF8200; }
@@ -38,6 +51,8 @@
   .register-form { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
   .register-form input { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 15px; margin-bottom: 10px; }
   .register-form button { width: 100%; padding: 14px; background: #FF8200; color: white; border: none; border-radius: 8px; font-size: 16px; cursor: pointer; }
+
+  .empty { text-align: center; padding: 20px; color: #999; font-size: 14px; }
 </style>
 <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 </head>
@@ -92,7 +107,7 @@ function showRegister() {
     <div class="section">
       <h2>加入會員</h2>
       <div class="register-form">
-        <p style="color:#666;font-size:14px;margin-bottom:15px;">輸入手機號碼完成註冊，每消費 120 元集 1 點</p>
+        <p style="color:#666;font-size:14px;margin-bottom:15px;">輸入手機號碼完成註冊，加入即享三張入會禮券！</p>
         <input type="tel" id="phone" placeholder="手機號碼（必填）" maxlength="10">
         <button onclick="register()">立即加入會員</button>
       </div>
@@ -112,15 +127,53 @@ async function register() {
   });
   const data = await res.json();
   if (data.id) {
-    memberData = { member: data, transactions: [] };
+    const res2 = await fetch(`${API}/api/member/points?line_id=${lineId}`);
+    memberData = await res2.json();
     showMemberCard();
   }
 }
 
 function showMemberCard() {
-  const { member, transactions } = memberData;
+  const { member, transactions, coupons } = memberData;
   const pts = member.points;
-  
+
+  // 優惠券
+  const activeCoupons = (coupons || []).filter(c => c.status === 'active');
+  const usedCoupons = (coupons || []).filter(c => c.status === 'used');
+
+  const couponHTML = activeCoupons.length === 0 && usedCoupons.length === 0
+    ? '<div class="empty">目前沒有優惠券</div>'
+    : [
+        ...activeCoupons.map(c => `
+          <div class="coupon-item">
+            <div class="coupon-left">
+              <div class="amount">NT$${c.discount}</div>
+              <div class="unit">折抵</div>
+            </div>
+            <div class="coupon-right">
+              <div class="title">${c.title}</div>
+              <div class="desc">${c.description || ''}</div>
+              <div class="expire">有效期限：${new Date(c.expires_at).toLocaleDateString('zh-TW')}</div>
+              <div class="code">核銷碼：${c.code}</div>
+            </div>
+          </div>
+        `),
+        ...usedCoupons.map(c => `
+          <div class="coupon-item used">
+            <div class="coupon-left">
+              <div class="amount">NT$${c.discount}</div>
+              <div class="unit">折抵</div>
+            </div>
+            <div class="coupon-right">
+              <div class="title">${c.title}</div>
+              <div class="desc">${c.description || ''}</div>
+              <div class="coupon-used-badge">✅ 已使用</div>
+            </div>
+          </div>
+        `)
+      ].join('');
+
+  // 點數兌換
   const redeemHTML = REWARDS.map(r => `
     <div class="redeem-item ${pts < r.points ? 'disabled' : ''}">
       <div class="points-req">${r.points}點</div>
@@ -128,8 +181,9 @@ function showMemberCard() {
     </div>
   `).join('');
 
+  // 消費紀錄
   const historyHTML = transactions.length === 0 
-    ? '<p style="color:#999;text-align:center;padding:20px;">尚無消費紀錄</p>'
+    ? '<div class="empty">尚無消費紀錄</div>'
     : transactions.map(t => `
       <div class="history-item">
         <div class="info">
@@ -151,7 +205,11 @@ function showMemberCard() {
       <div class="member-name">👤 ${member.name || ''} ${member.phone ? '📱 ' + member.phone : ''}</div>
     </div>
     <div class="section">
-      <h2>🎁 點數兌換</h2>
+      <h2>🎁 我的優惠券（${activeCoupons.length} 張可用）</h2>
+      ${couponHTML}
+    </div>
+    <div class="section">
+      <h2>⭐ 點數兌換</h2>
       <div class="redeem-grid">${redeemHTML}</div>
     </div>
     <div class="section">
