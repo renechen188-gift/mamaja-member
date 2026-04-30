@@ -93,7 +93,7 @@ function showRegister() {
       <h2>加入會員</h2>
       <div class="register-form">
         <p style="color:#666;font-size:14px;margin-bottom:15px;">輸入手機號碼完成註冊，每消費 120 元集 1 點</p>
-        <input type="tel" id="phone" placeholder="手機號碼（選填）" maxlength="10">
+        <input type="tel" id="phone" placeholder="手機號碼（必填）" maxlength="10">
         <button onclick="register()">立即加入會員</button>
       </div>
     </div>
@@ -102,6 +102,8 @@ function showRegister() {
 
 async function register() {
   const phone = document.getElementById('phone').value;
+  if (!phone) { alert('請輸入手機號碼'); return; }
+  
   const profile = await liff.getProfile();
   const res = await fetch(`${API}/api/member`, {
     method: 'POST',
