@@ -321,4 +321,19 @@ async function redeemPoints(points, name) {
       staff: currentStaff.name
     })
   });
-  const data = await res
+  const data = await res.json();
+  const el = document.getElementById('redeem-result');
+  el.style.display = 'block';
+  if (data.success) {
+    el.className = 'result success';
+    el.innerHTML = `✅ 兌換成功！剩餘 ${data.total} 點`;
+  } else {
+    el.className = 'result error';
+    el.innerHTML = `❌ ${data.error}`;
+  }
+}
+
+showLogin();
+</script>
+</body>
+</html>
