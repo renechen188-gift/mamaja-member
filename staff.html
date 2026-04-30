@@ -6,31 +6,33 @@
 <title>麻媽家 店員後台</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { font-family: 'Noto Sans TC', sans-serif; background: #f5f0eb; min-height: 100vh; }
-  .header { background: linear-gradient(135deg, #8B0000, #c0392b); color: white; padding: 20px; text-align: center; }
+  body { font-family: 'Noto Sans TC', sans-serif; background: #fff8f2; min-height: 100vh; }
+  .header { background: linear-gradient(135deg, #cc6600, #FF8200); color: white; padding: 20px; text-align: center; }
   .header h1 { font-size: 20px; }
   .header .staff-info { font-size: 13px; opacity: 0.8; margin-top: 5px; }
   .section { padding: 20px; }
   .card { background: white; border-radius: 12px; padding: 20px; margin-bottom: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
   .card h2 { font-size: 16px; color: #333; margin-bottom: 15px; }
-  input, select { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 15px; margin-bottom: 10px; }
-  .btn { width: 100%; padding: 14px; border: none; border-radius: 8px; font-size: 16px; cursor: pointer; color: white; }
-  .btn-primary { background: #8B0000; }
+  input { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 15px; margin-bottom: 10px; }
+  .btn { width: 100%; padding: 14px; border: none; border-radius: 8px; font-size: 16px; cursor: pointer; color: white; margin-bottom: 8px; }
+  .btn-primary { background: #FF8200; }
   .btn-success { background: #27ae60; }
   .btn-danger { background: #e74c3c; }
-  .member-info { background: #f8f9fa; border-radius: 8px; padding: 15px; margin-bottom: 15px; }
+  .member-info { background: #fff8f2; border-radius: 8px; padding: 15px; margin-bottom: 15px; }
   .member-info .name { font-size: 18px; font-weight: bold; color: #333; }
-  .member-info .points { font-size: 32px; font-weight: bold; color: #8B0000; }
+  .member-info .points { font-size: 32px; font-weight: bold; color: #FF8200; }
   .member-info .label { font-size: 13px; color: #999; }
-  .result { padding: 15px; border-radius: 8px; margin-top: 15px; text-align: center; font-size: 16px; font-weight: bold; display: none; }
+  .result { padding: 15px; border-radius: 8px; margin-top: 10px; text-align: center; font-size: 16px; font-weight: bold; display: none; }
   .result.success { background: #d4edda; color: #155724; }
   .result.error { background: #f8d7da; color: #721c24; }
   .login-form { max-width: 400px; margin: 50px auto; }
-  .redeem-btn { background: white; border: 2px solid #8B0000; color: #8B0000; border-radius: 8px; padding: 12px; margin-bottom: 8px; width: 100%; font-size: 14px; cursor: pointer; }
-  .redeem-btn:disabled { opacity: 0.4; cursor: not-allowed; }
   .tab { display: flex; margin-bottom: 20px; background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
-  .tab-btn { flex: 1; padding: 14px; border: none; background: white; cursor: pointer; font-size: 15px; }
-  .tab-btn.active { background: #8B0000; color: white; }
+  .tab-btn { flex: 1; padding: 14px 5px; border: none; background: white; cursor: pointer; font-size: 13px; }
+  .tab-btn.active { background: #FF8200; color: white; }
+  .coupon-result { background: #fff3e0; border: 2px solid #FF8200; border-radius: 12px; padding: 20px; text-align: center; margin-top: 15px; display: none; }
+  .coupon-result .coupon-title { font-size: 20px; font-weight: bold; color: #FF8200; margin-bottom: 8px; }
+  .coupon-result .coupon-discount { font-size: 36px; font-weight: bold; color: #cc6600; }
+  .coupon-result .coupon-desc { font-size: 14px; color: #666; margin-top: 8px; }
 </style>
 </head>
 <body>
@@ -48,7 +50,6 @@ const REWARDS = [
 
 let currentStaff = null;
 let currentMember = null;
-let currentTab = 'add';
 
 function showLogin() {
   document.getElementById('app').innerHTML = `
@@ -91,7 +92,8 @@ function showMain() {
     <div class="section">
       <div class="tab">
         <button class="tab-btn active" onclick="switchTab('add')" id="tab-add">➕ 加點</button>
-        <button class="tab-btn" onclick="switchTab('redeem')" id="tab-redeem">🎁 兌換</button>
+        <button class="tab-btn" onclick="switchTab('coupon')" id="tab-coupon">🎫 核銷券</button>
+        <button class="tab-btn" onclick="switchTab('redeem')" id="tab-redeem">🎁 兌換點</button>
         <button class="tab-btn" onclick="switchTab('query')" id="tab-query">🔍 查詢</button>
       </div>
       <div id="tab-content"></div>
@@ -101,12 +103,12 @@ function showMain() {
 }
 
 function switchTab(tab) {
-  currentTab = tab;
   currentMember = null;
-  ['add','redeem','query'].forEach(t => {
+  ['add','coupon','redeem','query'].forEach(t => {
     document.getElementById(`tab-${t}`).className = 'tab-btn' + (t === tab ? ' active' : '');
   });
   if (tab === 'add') showAddTab();
+  if (tab === 'coupon') showCouponTab();
   if (tab === 'redeem') showRedeemTab();
   if (tab === 'query') showQueryTab();
 }
@@ -119,6 +121,24 @@ function showAddTab() {
       <button class="btn btn-primary" onclick="searchMember('add')">查詢</button>
     </div>
     <div id="member-result"></div>
+  `;
+}
+
+function showCouponTab() {
+  document.getElementById('tab-content').innerHTML = `
+    <div class="card">
+      <h2>🎫 核銷優惠券</h2>
+      <p style="font-size:13px;color:#999;margin-bottom:15px;">請客人出示會員卡上的核銷碼</p>
+      <input type="text" id="coupon-code" placeholder="輸入核銷碼（6碼）" maxlength="6" style="text-transform:uppercase;letter-spacing:3px;font-size:18px;text-align:center;">
+      <button class="btn btn-primary" onclick="redeemCoupon()">確認核銷</button>
+      <div class="coupon-result" id="coupon-result">
+        <div class="coupon-title" id="coupon-title"></div>
+        <div class="coupon-discount" id="coupon-discount"></div>
+        <div class="coupon-desc" id="coupon-desc"></div>
+        <div style="margin-top:15px;font-size:13px;color:#27ae60;font-weight:bold">✅ 核銷成功！</div>
+      </div>
+      <div class="result error" id="coupon-error"></div>
+    </div>
   `;
 }
 
@@ -144,6 +164,34 @@ function showQueryTab() {
   `;
 }
 
+async function redeemCoupon() {
+  const code = document.getElementById('coupon-code').value.toUpperCase();
+  if (!code || code.length < 6) { alert('請輸入完整核銷碼'); return; }
+
+  const res = await fetch(`${API}/api/coupon/redeem`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ code, staff: currentStaff.name, store: currentStaff.store })
+  });
+  const data = await res.json();
+
+  const resultEl = document.getElementById('coupon-result');
+  const errorEl = document.getElementById('coupon-error');
+
+  if (data.success) {
+    document.getElementById('coupon-title').textContent = data.coupon.title;
+    document.getElementById('coupon-discount').textContent = `NT$${data.coupon.discount} 折抵`;
+    document.getElementById('coupon-desc').textContent = data.coupon.description || '';
+    resultEl.style.display = 'block';
+    errorEl.style.display = 'none';
+    document.getElementById('coupon-code').value = '';
+  } else {
+    errorEl.textContent = `❌ ${data.error}`;
+    errorEl.style.display = 'block';
+    resultEl.style.display = 'none';
+  }
+}
+
 async function searchMember(mode) {
   const phone = document.getElementById('search-phone').value;
   if (!phone) return alert('請輸入手機號碼');
@@ -158,7 +206,6 @@ async function searchMember(mode) {
   }
   
   currentMember = data.member;
-  
   if (mode === 'add') showAddPoints();
   if (mode === 'redeem') showRedeemPoints();
   if (mode === 'query') showQueryResult(data);
@@ -185,8 +232,8 @@ function showAddPoints() {
 function showRedeemPoints() {
   const pts = currentMember.points;
   const redeemBtns = REWARDS.map(r => `
-    <button class="redeem-btn" onclick="redeemPoints(${r.points},'${r.name}')" 
-      ${pts < r.points ? 'disabled' : ''}>
+    <button class="btn" style="background:${pts >= r.points ? '#FF8200' : '#ccc'};margin-bottom:8px;" 
+      onclick="redeemPoints(${r.points},'${r.name}')" ${pts < r.points ? 'disabled' : ''}>
       ${r.points} 點 → ${r.name} ${pts < r.points ? '（點數不足）' : ''}
     </button>
   `).join('');
@@ -218,13 +265,15 @@ function showQueryResult(data) {
       </div>`).join('')
     : '<div style="color:#999;text-align:center;padding:15px">尚無紀錄</div>';
 
+  const activeCoupons = (data.coupons || []).filter(c => c.status === 'active');
+
   document.getElementById('member-result').innerHTML = `
     <div class="card">
       <div class="member-info">
         <div class="label">會員</div>
         <div class="name">${currentMember.phone}</div>
         <div class="points">${currentMember.points}</div>
-        <div class="label">累積點數</div>
+        <div class="label">累積點數｜可用優惠券 ${activeCoupons.length} 張</div>
       </div>
       <h2>最近消費紀錄</h2>
       ${txHTML}
@@ -272,20 +321,4 @@ async function redeemPoints(points, name) {
       staff: currentStaff.name
     })
   });
-  const data = await res.json();
-  const el = document.getElementById('redeem-result');
-  el.style.display = 'block';
-  if (data.success) {
-    el.className = 'result success';
-    el.innerHTML = `✅ 兌換成功！剩餘 ${data.total} 點`;
-    currentMember.points = data.total;
-  } else {
-    el.className = 'result error';
-    el.innerHTML = `❌ ${data.error}`;
-  }
-}
-
-showLogin();
-</script>
-</body>
-</html>
+  const data = await res
