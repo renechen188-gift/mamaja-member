@@ -5,15 +5,22 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>麻媽家 會員中心</title>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+<script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 <style>
   :root {
-    --orange: #F47B20;
-    --orange-dark: #C45500;
+    --orange: #FF8200;
+    --orange-dark: #CC6600;
     --orange-light: #FFF3E8;
     --cream: #F5F0EB;
     --text: #2A1A00;
     --muted: #8A7A6A;
     --border: #EDE5DC;
+
+    /* 優惠券頂部循環配色：深咖 / 深綠 / 深紅 / 深藍 */
+    --c-brown: #6B4423;
+    --c-green: #2F5233;
+    --c-red: #7A2E2E;
+    --c-blue: #2C4A6B;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
   html, body { height: 100%; background: var(--cream); }
@@ -21,7 +28,7 @@
 
   /* HEADER */
   .header {
-    background: var(--orange);
+    background: linear-gradient(135deg, var(--orange-dark), var(--orange));
     padding: 16px 20px 14px;
     display: flex;
     align-items: center;
@@ -42,6 +49,11 @@
     display: flex; align-items: center; justify-content: center;
     overflow: hidden;
     flex-shrink: 0;
+  }
+  .logo-circle img {
+    width: 100%; height: 100%;
+    object-fit: cover;
+    border-radius: 50%;
   }
   .logo-circle span {
     font-family: 'Noto Serif TC';
@@ -67,6 +79,8 @@
   }
   .header-member-name {
     color: white; font-size: 14px; font-weight: 700;
+    max-width: 160px;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   }
 
   /* TAB BAR */
@@ -143,8 +157,12 @@
     padding: 16px 20px 14px;
     position: relative;
   }
-  .coupon-top.orange { background: var(--orange); }
-  .coupon-top.dark { background: var(--orange-dark); }
+  /* 優惠券頂部循環配色（依序：深咖 → 深綠 → 深紅 → 深藍） */
+  .coupon-top.brown { background: var(--c-brown); }
+  .coupon-top.green { background: var(--c-green); }
+  .coupon-top.red   { background: var(--c-red); }
+  .coupon-top.blue  { background: var(--c-blue); }
+
   .coupon-label {
     color: rgba(255,255,255,0.7);
     font-size: 10px; letter-spacing: 2px;
@@ -159,9 +177,6 @@
   .coupon-amount span {
     font-size: 16px; font-weight: 500;
     vertical-align: bottom; margin-left: 4px;
-  }
-  .coupon-amount.discount {
-    font-size: 30px;
   }
   .coupon-status-badge {
     position: absolute;
@@ -269,36 +284,38 @@
     line-height: 1.7;
   }
 
-  /* HISTORY TAB */
-  .history-list {
-    padding: 12px 16px 100px;
-    display: flex; flex-direction: column; gap: 0;
-  }
-  .history-item {
-    background: white;
-    padding: 14px 18px;
-    display: flex; align-items: center; gap: 14px;
-    border-bottom: 0.5px solid var(--border);
-  }
-  .history-item:first-child { border-radius: 16px 16px 0 0; }
-  .history-item:last-child { border-radius: 0 0 16px 16px; border-bottom: none; }
-  .history-icon {
-    width: 38px; height: 38px;
+  /* COMING SOON */
+  .coming-soon-badge {
+    display: inline-block;
     background: var(--orange-light);
-    border-radius: 10px;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 18px; flex-shrink: 0;
+    color: var(--orange-dark);
+    font-size: 10px; font-weight: 700;
+    letter-spacing: 1px;
+    padding: 3px 10px;
+    border-radius: 20px;
   }
-  .history-store { font-size: 13px; font-weight: 500; color: var(--text); }
-  .history-date { font-size: 11px; color: #B0A090; margin-top: 3px; }
-  .history-amount {
-    margin-left: auto; text-align: right;
+  .coming-soon-wrap {
+    padding: 60px 16px 100px;
   }
-  .history-price {
-    font-size: 15px; font-weight: 700; color: var(--orange);
+  .coming-soon-card {
+    background: white;
+    border-radius: 20px;
+    border: 1.5px dashed #E0D8D0;
+    padding: 44px 28px;
+    text-align: center;
   }
-  .history-note {
-    font-size: 11px; color: #B0A090; margin-top: 3px;
+  .coming-soon-icon {
+    font-size: 40px; margin-bottom: 14px; opacity: 0.35;
+  }
+  .coming-soon-title {
+    font-family: 'Noto Serif TC';
+    font-size: 17px; font-weight: 700;
+    color: var(--text);
+    margin: 10px 0 6px;
+  }
+  .coming-soon-sub {
+    font-size: 12.5px; color: var(--muted);
+    line-height: 1.8;
   }
 
   /* PROFILE TAB */
@@ -318,6 +335,7 @@
     font-size: 12px; font-weight: 700;
     color: var(--orange-dark);
     letter-spacing: 1px;
+    display: flex; justify-content: space-between; align-items: center;
   }
   .profile-row {
     padding: 13px 18px;
@@ -328,11 +346,15 @@
   .profile-row:last-child { border-bottom: none; }
   .profile-row-label { color: var(--muted); }
   .profile-row-value { color: var(--text); font-weight: 500; }
-  .profile-row-edit {
-    color: var(--orange); font-size: 12px; cursor: pointer;
+  .profile-row-comingsoon {
+    padding: 20px 18px;
+    text-align: center;
+    color: var(--muted);
+    font-size: 12.5px;
+    line-height: 1.7;
   }
 
-  /* USE MODAL */
+  /* MODAL (共用：核銷 / 註冊) */
   .modal-overlay {
     display: none;
     position: fixed; inset: 0;
@@ -371,7 +393,7 @@
   }
   .modal-code {
     font-size: 40px; font-weight: 900;
-    color: var(--orange);
+    color: var(--orange-dark);
     letter-spacing: 8px;
     font-family: monospace;
   }
@@ -393,15 +415,91 @@
     font-family: 'Noto Sans TC';
   }
   .modal-close:active { opacity: 0.9; }
+
+  /* 註冊表單 */
+  .modal.center { border-radius: 24px; }
+  .form-label {
+    font-size: 12px; color: var(--muted); font-weight: 700;
+    margin: 16px 0 6px;
+  }
+  .form-label:first-of-type { margin-top: 0; }
+  .form-input {
+    width: 100%;
+    border: 1.5px solid var(--border);
+    border-radius: 12px;
+    padding: 13px 14px;
+    font-size: 15px;
+    font-family: 'Noto Sans TC';
+    color: var(--text);
+    background: var(--cream);
+  }
+  .form-input:focus { outline: none; border-color: var(--orange); }
+  .form-error {
+    display: none;
+    color: #B23B3B;
+    font-size: 12px;
+    margin-top: 8px;
+  }
+  .form-hint {
+    font-size: 11px; color: #C0B0A0; margin-top: 6px;
+  }
+
+  /* LOADING / ERROR SCREEN */
+  .full-screen-state {
+    position: fixed; inset: 0;
+    background: var(--cream);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    z-index: 300;
+    padding: 40px;
+    text-align: center;
+  }
+  .full-screen-state.hidden { display: none; }
+  .spinner {
+    width: 34px; height: 34px;
+    border: 3px solid var(--border);
+    border-top-color: var(--orange);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin-bottom: 16px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .state-title { font-size: 15px; font-weight: 700; color: var(--text); margin-bottom: 6px; }
+  .state-sub { font-size: 12.5px; color: var(--muted); line-height: 1.7; }
+  .retry-btn {
+    margin-top: 18px;
+    background: var(--orange);
+    color: white; border: none;
+    padding: 10px 24px; border-radius: 22px;
+    font-size: 13px; font-weight: 700; cursor: pointer;
+  }
 </style>
 </head>
 <body>
+
+<!-- LOADING -->
+<div class="full-screen-state" id="loadingState">
+  <div class="spinner"></div>
+  <div class="state-title">會員資料載入中</div>
+  <div class="state-sub">請稍候...</div>
+</div>
+
+<!-- ERROR -->
+<div class="full-screen-state hidden" id="errorState">
+  <div class="state-title">連線發生問題</div>
+  <div class="state-sub" id="errorMsg">請確認網路連線後再試一次</div>
+  <button class="retry-btn" onclick="location.reload()">重新載入</button>
+</div>
+
+<!-- MAIN APP (資料載入完成才顯示) -->
+<div id="app" style="display:none;">
 
 <!-- HEADER -->
 <div class="header">
   <div class="header-logo">
     <div class="logo-circle">
-      <span>家</span>
+      <!-- 若專案根目錄放入 logo.png，會自動顯示；找不到圖檔時退回文字標記 -->
+      <img src="logo.png" alt="麻媽家 Logo" onerror="this.remove(); document.getElementById('logoFallback').style.display='flex';">
+      <span id="logoFallback" style="display:none;">家</span>
     </div>
     <div>
       <div class="logo-text-main">麻媽家</div>
@@ -410,7 +508,7 @@
   </div>
   <div class="header-member">
     <div class="header-member-label">會員</div>
-    <div class="header-member-name" id="memberName">王小明</div>
+    <div class="header-member-name" id="memberName">—</div>
   </div>
 </div>
 
@@ -425,165 +523,25 @@
 <div class="tab-content active" id="tab-coupon">
 
   <div class="coupon-filter">
-    <div class="filter-btn active" onclick="filterCoupon('usable', this)">可使用 (2)</div>
-    <div class="filter-btn" onclick="filterCoupon('used', this)">已使用 (3)</div>
-    <div class="filter-btn" onclick="filterCoupon('expired', this)">已過期 (1)</div>
+    <div class="filter-btn active" data-filter="usable" onclick="filterCoupon('usable', this)">可使用 (<span id="count-usable">0</span>)</div>
+    <div class="filter-btn" data-filter="used" onclick="filterCoupon('used', this)">已使用 (<span id="count-used">0</span>)</div>
+    <div class="filter-btn" data-filter="expired" onclick="filterCoupon('expired', this)">已過期 (<span id="count-expired">0</span>)</div>
   </div>
 
-  <!-- 可使用 -->
-  <div class="coupon-list" id="list-usable">
-
-    <div class="coupon-card">
-      <div class="coupon-top orange">
-        <div class="coupon-label">折扣優惠券</div>
-        <div class="coupon-amount">$50 <span>折抵</span></div>
-        <div class="coupon-status-badge">未使用</div>
-      </div>
-      <div class="coupon-divider"></div>
-      <div class="coupon-bottom">
-        <div>
-          <div class="coupon-info-main">滿 NT$250 可用　全門市通用</div>
-          <div class="coupon-info-expire">有效期限：2025/12/31</div>
-        </div>
-        <button class="use-btn" onclick="showModal('$50 折抵優惠券', '出示此頁面給店員確認')">立即使用</button>
-      </div>
-    </div>
-
-    <div class="coupon-card">
-      <div class="coupon-top dark">
-        <div class="coupon-label">生日專屬優惠</div>
-        <div class="coupon-amount discount">9折 <span>全單折扣</span></div>
-        <div class="coupon-status-badge">未使用</div>
-      </div>
-      <div class="coupon-divider"></div>
-      <div class="coupon-bottom">
-        <div>
-          <div class="coupon-info-main">生日當月使用　全門市通用</div>
-          <div class="coupon-info-expire">有效期限：2025/11/30</div>
-        </div>
-        <button class="use-btn" onclick="showModal('生日優惠 9折', '生日當月全單9折，出示給店員確認')">立即使用</button>
-      </div>
-    </div>
-
-    <div class="notice-bar">
-      使用方式：點擊「立即使用」出示驗證碼給店員核銷，每次消費限用一張，核銷後無法復原。
-    </div>
-
-  </div>
-
-  <!-- 已使用 -->
-  <div class="coupon-list" id="list-used" style="display:none;">
-
-    <div class="coupon-card used">
-      <div class="coupon-top orange" style="position:relative;">
-        <div class="coupon-label">折扣優惠券</div>
-        <div class="coupon-amount">$50 <span>折抵</span></div>
-        <div class="used-badge">已使用</div>
-      </div>
-      <div class="coupon-divider"></div>
-      <div class="coupon-bottom">
-        <div>
-          <div class="coupon-info-main">信義店　2025/10/15 使用</div>
-          <div class="coupon-info-expire">已於消費時折抵</div>
-        </div>
-      </div>
-    </div>
-
-    <div class="coupon-card used">
-      <div class="coupon-top orange" style="position:relative;">
-        <div class="coupon-label">折扣優惠券</div>
-        <div class="coupon-amount">$30 <span>折抵</span></div>
-        <div class="used-badge">已使用</div>
-      </div>
-      <div class="coupon-divider"></div>
-      <div class="coupon-bottom">
-        <div>
-          <div class="coupon-info-main">內湖店　2025/09/20 使用</div>
-          <div class="coupon-info-expire">已於消費時折抵</div>
-        </div>
-      </div>
-    </div>
-
-    <div class="coupon-card used">
-      <div class="coupon-top dark" style="position:relative;">
-        <div class="coupon-label">新會員優惠</div>
-        <div class="coupon-amount">85折 <span>全單</span></div>
-        <div class="used-badge">已使用</div>
-      </div>
-      <div class="coupon-divider"></div>
-      <div class="coupon-bottom">
-        <div>
-          <div class="coupon-info-main">信義店　2025/10/01 使用</div>
-          <div class="coupon-info-expire">加入會員首次消費折扣</div>
-        </div>
-      </div>
-    </div>
-
-  </div>
-
-  <!-- 已過期 -->
-  <div class="coupon-list" id="list-expired" style="display:none;">
-
-    <div class="coupon-card expired">
-      <div class="coupon-top orange" style="position:relative;">
-        <div class="coupon-label">季度優惠券</div>
-        <div class="coupon-amount">$80 <span>折抵</span></div>
-        <div class="used-badge">已過期</div>
-      </div>
-      <div class="coupon-divider"></div>
-      <div class="coupon-bottom">
-        <div>
-          <div class="coupon-info-main">滿 NT$350 可用</div>
-          <div class="coupon-info-expire">有效期限：2025/09/30（已過期）</div>
-        </div>
-      </div>
-    </div>
-
-    <div class="empty-card">
-      <div class="empty-icon">🎫</div>
-      <div class="empty-text">更多優惠隨時推出</div>
-      <div class="empty-sub">請留意門市公告與 LINE 通知</div>
-    </div>
-
-  </div>
+  <div class="coupon-list" id="list-usable"></div>
+  <div class="coupon-list" id="list-used" style="display:none;"></div>
+  <div class="coupon-list" id="list-expired" style="display:none;"></div>
 
 </div>
 
-<!-- TAB: 消費紀錄 -->
+<!-- TAB: 消費紀錄（策略調整：消費集點回歸 POS，此頁改為 Coming Soon） -->
 <div class="tab-content" id="tab-history">
-  <div class="history-list">
-    <div class="history-item">
-      <div class="history-icon">🍲</div>
-      <div>
-        <div class="history-store">信義店消費</div>
-        <div class="history-date">2025/10/15</div>
-      </div>
-      <div class="history-amount">
-        <div class="history-price">NT$280</div>
-        <div class="history-note">折抵後</div>
-      </div>
-    </div>
-    <div class="history-item">
-      <div class="history-icon">🍜</div>
-      <div>
-        <div class="history-store">信義店消費</div>
-        <div class="history-date">2025/10/08</div>
-      </div>
-      <div class="history-amount">
-        <div class="history-price">NT$150</div>
-        <div class="history-note"></div>
-      </div>
-    </div>
-    <div class="history-item">
-      <div class="history-icon">🥘</div>
-      <div>
-        <div class="history-store">內湖店消費</div>
-        <div class="history-date">2025/10/01</div>
-      </div>
-      <div class="history-amount">
-        <div class="history-price">NT$320</div>
-        <div class="history-note">首次消費</div>
-      </div>
+  <div class="coming-soon-wrap">
+    <div class="coming-soon-card">
+      <span class="coming-soon-badge">COMING SOON</span>
+      <div class="coming-soon-icon">🧾</div>
+      <div class="coming-soon-title">消費紀錄功能開發中</div>
+      <div class="coming-soon-sub">敬請期待<br>目前消費明細請洽門市服務人員</div>
     </div>
   </div>
 </div>
@@ -591,49 +549,66 @@
 <!-- TAB: 個人設定 -->
 <div class="tab-content" id="tab-profile">
   <div class="profile-section">
+
+    <div class="profile-card">
+      <div class="profile-card-header">
+        <span>點數兌換</span>
+        <span class="coming-soon-badge">COMING SOON</span>
+      </div>
+      <div class="profile-row-comingsoon">點數兌換功能開發中，敬請期待</div>
+    </div>
+
     <div class="profile-card">
       <div class="profile-card-header">基本資料</div>
       <div class="profile-row">
         <span class="profile-row-label">姓名</span>
-        <span class="profile-row-value">王小明</span>
+        <span class="profile-row-value" id="profileName">—</span>
       </div>
       <div class="profile-row">
         <span class="profile-row-label">手機號碼</span>
-        <span>
-          <span class="profile-row-value">0912-345-678</span>
-        </span>
-      </div>
-      <div class="profile-row">
-        <span class="profile-row-label">生日</span>
-        <span>
-          <span class="profile-row-value" style="color:#C0B0A0;">未填寫</span>
-          <span class="profile-row-edit" style="margin-left:10px;">填寫 →</span>
-        </span>
-      </div>
-      <div class="profile-row">
-        <span class="profile-row-label">加入門市</span>
-        <span class="profile-row-value">麻媽家 信義店</span>
+        <span class="profile-row-value" id="profilePhone">—</span>
       </div>
       <div class="profile-row">
         <span class="profile-row-label">加入日期</span>
-        <span class="profile-row-value">2025/10/01</span>
+        <span class="profile-row-value" id="profileJoinDate">—</span>
       </div>
     </div>
 
     <div class="notice-bar" style="margin:0;">
-      填寫生日後，生日當月自動發放 9折優惠券，到期前透過 LINE 通知提醒。
+      優惠券出示給店員核銷後即無法復原，請於效期內盡快使用。
     </div>
   </div>
 </div>
 
-<!-- USE MODAL -->
+</div><!-- /#app -->
+
+<!-- 註冊 MODAL -->
+<div class="modal-overlay" id="registerModal" style="align-items:center;">
+  <div class="modal center">
+    <div class="modal-title">加入麻媽家會員</div>
+    <div class="modal-sub">完成註冊即可獲得 3 張迎新優惠券</div>
+
+    <div class="form-label">姓名</div>
+    <input type="text" id="reg-name" class="form-input" placeholder="您的稱呼（選填）">
+
+    <div class="form-label">手機號碼</div>
+    <input type="tel" id="reg-phone" class="form-input" placeholder="請輸入手機號碼" maxlength="10">
+    <div class="form-hint">用於門市核對會員身份，請務必填寫</div>
+
+    <div class="form-error" id="reg-error"></div>
+
+    <button class="modal-close" style="margin-top:20px;" onclick="submitRegister()" id="reg-submit-btn">完成加入</button>
+  </div>
+</div>
+
+<!-- 核銷 MODAL -->
 <div class="modal-overlay" id="modal" onclick="closeModal(event)">
   <div class="modal">
-    <div class="modal-title" id="modal-title">$50 折抵優惠券</div>
+    <div class="modal-title" id="modal-title">優惠券</div>
     <div class="modal-sub" id="modal-sub">出示此頁面給店員確認核銷</div>
     <div class="modal-code-box">
-      <div class="modal-code" id="modal-code">A3F7</div>
-      <div class="modal-code-hint">請店員輸入此驗證碼完成核銷</div>
+      <div class="modal-code" id="modal-code">------</div>
+      <div class="modal-code-hint">請店員輸入此核銷碼完成核銷</div>
     </div>
     <div class="modal-expire" id="modal-expire"></div>
     <button class="modal-close" onclick="closeModalDirect()">關閉</button>
@@ -641,6 +616,229 @@
 </div>
 
 <script>
+const API = 'https://mamaja-member-api.renechen188.workers.dev';
+const LIFF_ID = '2006569520-JIW00lVU';
+const COUPON_COLORS = ['brown', 'green', 'red', 'blue'];
+
+let lineProfile = null;
+let currentMember = null;
+let currentCoupons = [];
+
+/* ---------- 啟動流程 ---------- */
+
+async function initApp() {
+  try {
+    await liff.init({ liffId: LIFF_ID });
+    if (!liff.isLoggedIn()) {
+      liff.login();
+      return;
+    }
+    lineProfile = await liff.getProfile();
+    await loadMember();
+  } catch (err) {
+    console.error(err);
+    showError('LIFF 初始化失敗，請確認是否從 LINE 內開啟本頁面。');
+  }
+}
+
+async function loadMember() {
+  try {
+    const res = await fetch(`${API}/api/member/points?line_id=${encodeURIComponent(lineProfile.userId)}`);
+    if (res.status === 404) {
+      showRegisterModal();
+      return;
+    }
+    if (!res.ok) throw new Error('伺服器錯誤 (' + res.status + ')');
+    const data = await res.json();
+    currentMember = data.member;
+    currentCoupons = data.coupons || [];
+    renderApp();
+  } catch (err) {
+    console.error(err);
+    showError('無法讀取會員資料，請檢查網路連線後重試。');
+  }
+}
+
+function showError(msg) {
+  document.getElementById('loadingState').classList.add('hidden');
+  document.getElementById('errorMsg').textContent = msg;
+  document.getElementById('errorState').classList.remove('hidden');
+}
+
+/* ---------- 註冊 ---------- */
+
+function showRegisterModal() {
+  document.getElementById('loadingState').classList.add('hidden');
+  document.getElementById('reg-name').value = (lineProfile && lineProfile.displayName) || '';
+  document.getElementById('registerModal').classList.add('open');
+}
+
+async function submitRegister() {
+  const name = document.getElementById('reg-name').value.trim();
+  const phone = document.getElementById('reg-phone').value.trim();
+  const errorEl = document.getElementById('reg-error');
+  errorEl.style.display = 'none';
+
+  if (!/^09\d{8}$/.test(phone)) {
+    errorEl.textContent = '請輸入正確的手機號碼格式（例：0912345678）';
+    errorEl.style.display = 'block';
+    return;
+  }
+
+  const btn = document.getElementById('reg-submit-btn');
+  btn.disabled = true;
+  btn.textContent = '處理中...';
+
+  try {
+    const res = await fetch(`${API}/api/member`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ line_id: lineProfile.userId, name: name || lineProfile.displayName, phone })
+    });
+    if (!res.ok) throw new Error('註冊失敗');
+    document.getElementById('registerModal').classList.remove('open');
+    document.getElementById('loadingState').classList.remove('hidden');
+    await loadMember();
+  } catch (err) {
+    console.error(err);
+    errorEl.textContent = '註冊失敗，請稍後再試';
+    errorEl.style.display = 'block';
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '完成加入';
+  }
+}
+
+/* ---------- 主畫面渲染 ---------- */
+
+function renderApp() {
+  document.getElementById('loadingState').classList.add('hidden');
+  document.getElementById('app').style.display = 'block';
+
+  const displayName = currentMember.name || (lineProfile && lineProfile.displayName) || '會員';
+  document.getElementById('memberName').textContent = displayName;
+  document.getElementById('profileName').textContent = displayName;
+  document.getElementById('profilePhone').textContent = currentMember.phone || '未填寫';
+  document.getElementById('profileJoinDate').textContent = formatDate(currentMember.created_at);
+
+  renderCoupons();
+}
+
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str == null ? '' : String(str);
+  return div.innerHTML;
+}
+
+function formatDate(iso) {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return '—';
+  return `${d.getFullYear()}/${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')}`;
+}
+
+function renderCoupons() {
+  const now = new Date();
+  const usable = [];
+  const used = [];
+  const expired = [];
+
+  currentCoupons.forEach(c => {
+    const isPastExpiry = new Date(c.expires_at) < now;
+    if (c.status === 'used') used.push(c);
+    else if (c.status === 'expired' || (c.status === 'active' && isPastExpiry)) expired.push(c);
+    else usable.push(c);
+  });
+
+  document.getElementById('count-usable').textContent = usable.length;
+  document.getElementById('count-used').textContent = used.length;
+  document.getElementById('count-expired').textContent = expired.length;
+
+  renderCouponList('list-usable', usable, 'usable');
+  renderCouponList('list-used', used, 'used');
+  renderCouponList('list-expired', expired, 'expired');
+}
+
+function renderCouponList(containerId, coupons, state) {
+  const container = document.getElementById(containerId);
+
+  if (coupons.length === 0) {
+    container.innerHTML = `
+      <div class="empty-card">
+        <div class="empty-icon">🎫</div>
+        <div class="empty-text">${state === 'usable' ? '目前沒有可使用的優惠券' : state === 'used' ? '尚無使用紀錄' : '沒有過期券'}</div>
+        <div class="empty-sub">請留意門市公告與 LINE 通知</div>
+      </div>`;
+    return;
+  }
+
+  container.innerHTML = coupons.map((c, i) => couponCardHTML(c, i, state)).join('')
+    + (state === 'usable' ? `
+      <div class="notice-bar">
+        使用方式：點擊「立即使用」出示核銷碼給店員確認，每次消費限用一張，核銷後無法復原。
+      </div>` : '');
+
+  if (state === 'usable') {
+    container.querySelectorAll('.use-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const coupon = currentCoupons.find(c => c.id == btn.dataset.id);
+        if (coupon) openRedeemModal(coupon);
+      });
+    });
+  }
+}
+
+function couponCardHTML(c, idx, state) {
+  const colorClass = COUPON_COLORS[idx % COUPON_COLORS.length];
+  const title = escapeHtml(c.title);
+  const desc = escapeHtml(c.description || '');
+  const expireText = state === 'expired'
+    ? `有效期限：${formatDate(c.expires_at)}（已過期）`
+    : `有效期限：${formatDate(c.expires_at)}`;
+
+  if (state === 'usable') {
+    return `
+    <div class="coupon-card">
+      <div class="coupon-top ${colorClass}">
+        <div class="coupon-label">${title}</div>
+        <div class="coupon-amount">$${c.discount} <span>折抵</span></div>
+        <div class="coupon-status-badge">未使用</div>
+      </div>
+      <div class="coupon-divider"></div>
+      <div class="coupon-bottom">
+        <div>
+          <div class="coupon-info-main">${desc}</div>
+          <div class="coupon-info-expire">${expireText}</div>
+        </div>
+        <button class="use-btn" data-id="${c.id}">立即使用</button>
+      </div>
+    </div>`;
+  }
+
+  const badgeText = state === 'used' ? '已使用' : '已過期';
+  const bottomInfo = state === 'used'
+    ? `${escapeHtml(c.used_store || '')}　${formatDate(c.used_at)} 使用`
+    : desc;
+
+  return `
+    <div class="coupon-card ${state}">
+      <div class="coupon-top ${colorClass}" style="position:relative;">
+        <div class="coupon-label">${title}</div>
+        <div class="coupon-amount">$${c.discount} <span>折抵</span></div>
+        <div class="used-badge">${badgeText}</div>
+      </div>
+      <div class="coupon-divider"></div>
+      <div class="coupon-bottom">
+        <div>
+          <div class="coupon-info-main">${bottomInfo}</div>
+          <div class="coupon-info-expire">${expireText}</div>
+        </div>
+      </div>
+    </div>`;
+}
+
+/* ---------- Tabs / Filter ---------- */
+
 function switchTab(name) {
   document.querySelectorAll('.tab').forEach((t,i) => {
     const names = ['coupon','history','profile'];
@@ -658,21 +856,13 @@ function filterCoupon(type, btn) {
   });
 }
 
-function generateCode() {
-  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-  let code = '';
-  for (let i = 0; i < 4; i++) code += chars[Math.floor(Math.random() * chars.length)];
-  return code;
-}
+/* ---------- 核銷 MODAL（顯示真實核銷碼） ---------- */
 
-function showModal(title, sub) {
-  document.getElementById('modal-title').textContent = title;
-  document.getElementById('modal-sub').textContent = sub;
-  document.getElementById('modal-code').textContent = generateCode();
-  const now = new Date();
-  const expire = new Date(now.getTime() + 10 * 60 * 1000);
-  document.getElementById('modal-expire').textContent =
-    '驗證碼有效至 ' + expire.getHours() + ':' + String(expire.getMinutes()).padStart(2,'0');
+function openRedeemModal(coupon) {
+  document.getElementById('modal-title').textContent = `${coupon.title}`;
+  document.getElementById('modal-sub').textContent = '出示此頁面給店員確認核銷';
+  document.getElementById('modal-code').textContent = coupon.code;
+  document.getElementById('modal-expire').textContent = '有效期限至 ' + formatDate(coupon.expires_at);
   document.getElementById('modal').classList.add('open');
 }
 
@@ -682,6 +872,9 @@ function closeModal(e) {
 function closeModalDirect() {
   document.getElementById('modal').classList.remove('open');
 }
+
+/* ---------- 啟動 ---------- */
+window.addEventListener('DOMContentLoaded', initApp);
 </script>
 </body>
 </html>
