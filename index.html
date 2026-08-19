@@ -197,6 +197,17 @@
     -webkit-appearance: none;
   }
   .use-btn:active { transform: scale(0.96); opacity: 0.9; }
+  .coupon-btn-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    flex-shrink: 0;
+  }
+  .online-btn {
+    background: #4A90D9;
+    font-size: 12px;
+    padding: 7px 16px;
+  }
 
   /* USED / EXPIRED STATE */
   .coupon-card.used .coupon-top,
@@ -733,14 +744,25 @@ function renderCouponList(containerId, coupons, state) {
   container.innerHTML = coupons.map((c, i) => couponCardHTML(c, i, state)).join('')
     + (state === 'usable' ? `
       <div class="notice-bar">
-        使用方式：點擊「立即使用」出示核銷碼給店員確認，每次消費限用一張，核銷後無法復原。
+        到店消費：點擊「到店使用」出示核銷碼給店員。線上點餐：點擊「線上使用」複製券碼，貼到點餐備註欄。每次消費限用一張，核銷後無法復原。
       </div>` : '');
 
   if (state === 'usable') {
-    container.querySelectorAll('.use-btn').forEach(btn => {
+    container.querySelectorAll('.use-btn:not(.online-btn)').forEach(btn => {
       btn.addEventListener('click', () => {
         const coupon = currentCoupons.find(c => c.id == btn.dataset.id);
         if (coupon) openRedeemModal(coupon);
+      });
+    });
+    container.querySelectorAll('.online-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const code = btn.dataset.code;
+        const coupon = currentCoupons.find(c => c.id == btn.dataset.id);
+        navigator.clipboard.writeText(code).then(() => {
+          alert(`券碼 ${code} 已複製！\n\n請到線上點餐頁面，在備註欄貼上此券碼：${code}\n\n店員確認後會為您附上：${coupon ? coupon.description : '贈品'}`);
+        }).catch(() => {
+          prompt('請複製此券碼，貼到點餐備註欄：', code);
+        });
       });
     });
   }
@@ -754,12 +776,17 @@ function couponCardHTML(c, idx, state) {
     ? `有效期限：${formatDate(c.expires_at)}（已過期）`
     : `有效期限：${formatDate(c.expires_at)}`;
 
+  const isGift = c.type === 'gift' || c.discount === 0;
+  const amountHTML = isGift
+    ? `<div class="coupon-amount">🎁 <span>贈品</span></div>`
+    : `<div class="coupon-amount">$${c.discount} <span>折抵</span></div>`;
+
   if (state === 'usable') {
     return `
     <div class="coupon-card">
       <div class="coupon-top ${colorClass}">
         <div class="coupon-label">${title}</div>
-        <div class="coupon-amount">$${c.discount} <span>折抵</span></div>
+        ${amountHTML}
         <div class="coupon-status-badge">未使用</div>
       </div>
       <div class="coupon-divider"></div>
@@ -768,7 +795,10 @@ function couponCardHTML(c, idx, state) {
           <div class="coupon-info-main">${desc}</div>
           <div class="coupon-info-expire">${expireText}</div>
         </div>
-        <button class="use-btn" data-id="${c.id}">立即使用</button>
+        <div class="coupon-btn-group">
+          <button class="use-btn" data-id="${c.id}">到店使用</button>
+          <button class="use-btn online-btn" data-id="${c.id}" data-code="${c.code}">線上使用</button>
+        </div>
       </div>
     </div>`;
   }
@@ -778,11 +808,15 @@ function couponCardHTML(c, idx, state) {
     ? `${escapeHtml(c.used_store || '')}　${formatDate(c.used_at)} 使用`
     : desc;
 
+  const amountHTMLInactive = isGift
+    ? `<div class="coupon-amount">🎁 <span>贈品</span></div>`
+    : `<div class="coupon-amount">$${c.discount} <span>折抵</span></div>`;
+
   return `
     <div class="coupon-card ${state}">
       <div class="coupon-top ${colorClass}" style="position:relative;">
         <div class="coupon-label">${title}</div>
-        <div class="coupon-amount">$${c.discount} <span>折抵</span></div>
+        ${amountHTMLInactive}
         <div class="used-badge">${badgeText}</div>
       </div>
       <div class="coupon-divider"></div>
