@@ -40,35 +40,11 @@
   .header-logo {
     display: flex;
     align-items: center;
-    gap: 10px;
   }
-  .logo-circle {
-    width: 44px; height: 44px;
-    background: white;
-    border-radius: 50%;
-    display: flex; align-items: center; justify-content: center;
-    overflow: hidden;
-    flex-shrink: 0;
-  }
-  .logo-circle img {
-    width: 100%; height: 100%;
-    object-fit: cover;
-    border-radius: 50%;
-  }
-  .logo-circle span {
-    font-family: 'Noto Serif TC';
-    font-size: 20px; font-weight: 700;
-    color: var(--orange);
-  }
-  .logo-text-main {
-    font-family: 'Noto Serif TC';
-    color: white; font-size: 20px; font-weight: 700;
-    letter-spacing: 2px;
-  }
-  .logo-text-sub {
-    color: rgba(255,255,255,0.65);
-    font-size: 10px; letter-spacing: 2px;
-    margin-top: 2px;
+  .header-logo img {
+    height: 48px;
+    width: auto;
+    object-fit: contain;
   }
   .header-member {
     text-align: right;
@@ -496,15 +472,7 @@
 <!-- HEADER -->
 <div class="header">
   <div class="header-logo">
-    <div class="logo-circle">
-      <!-- 若專案根目錄放入 logo.png，會自動顯示；找不到圖檔時退回文字標記 -->
-      <img src="logo.png" alt="麻媽家 Logo" onerror="this.remove(); document.getElementById('logoFallback').style.display='flex';">
-      <span id="logoFallback" style="display:none;">家</span>
-    </div>
-    <div>
-      <div class="logo-text-main">麻媽家</div>
-      <div class="logo-text-sub">MAMAJIA · 安心實惠</div>
-    </div>
+    <img src="logo.png" alt="麻媽家 Logo" onerror="this.style.display='none';">
   </div>
   <div class="header-member">
     <div class="header-member-label">會員</div>
