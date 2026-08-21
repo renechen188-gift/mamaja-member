@@ -3,66 +3,82 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>麻媽家 店員後台</title>
+<title>麻媽家 LINE 會員管理後台</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { font-family: 'Noto Sans TC', sans-serif; background: #fff8f2; min-height: 100vh; }
-  .header { background: linear-gradient(135deg, #cc6600, #FF8200); color: white; padding: 20px; text-align: center; }
-  .header h1 { font-size: 20px; }
-  .header .staff-info { font-size: 13px; opacity: 0.8; margin-top: 5px; }
-  .section { padding: 20px; }
-  .card { background: white; border-radius: 12px; padding: 20px; margin-bottom: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
-  .card h2 { font-size: 16px; color: #333; margin-bottom: 15px; }
-  input { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 15px; margin-bottom: 10px; }
-  select { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 15px; margin-bottom: 10px; background: white; }
-  .btn { width: 100%; padding: 14px; border: none; border-radius: 8px; font-size: 16px; cursor: pointer; color: white; margin-bottom: 8px; }
+  body { font-family: 'Noto Sans TC', sans-serif; background: #f5f5f5; min-height: 100vh; }
+  .header { background: linear-gradient(135deg, #cc6600, #FF8200); color: white; padding: 20px; display: flex; justify-content: space-between; align-items: center; }
+  .header h1 { font-size: 18px; }
+  .header .logout { background: rgba(255,255,255,0.2); border: none; color: white; padding: 8px 15px; border-radius: 8px; cursor: pointer; font-size: 14px; }
+  .stats-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; padding: 20px; }
+  .stat-card { background: white; border-radius: 12px; padding: 20px; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+  .stat-card .num { font-size: 28px; font-weight: bold; color: #FF8200; }
+  .stat-card .label { font-size: 12px; color: #999; margin-top: 5px; }
+  .section { padding: 0 20px 20px; }
+  .card { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin-bottom: 15px; }
+  .card h2 { font-size: 15px; margin-bottom: 12px; }
+  input, select, textarea { width: 100%; padding: 11px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; margin-bottom: 10px; font-family: inherit; }
+  textarea { resize: vertical; min-height: 60px; }
+  .btn { padding: 12px 20px; border: none; border-radius: 8px; font-size: 14px; cursor: pointer; color: white; width: 100%; margin-bottom: 8px; }
   .btn-primary { background: #FF8200; }
   .btn-success { background: #27ae60; }
-  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
-  .member-info { background: #fff8f2; border-radius: 8px; padding: 15px; margin-bottom: 15px; }
-  .member-info .name { font-size: 18px; font-weight: bold; color: #333; }
-  .member-info .label { font-size: 13px; color: #999; }
-  .result { padding: 15px; border-radius: 8px; margin-top: 10px; text-align: center; font-size: 16px; font-weight: bold; display: none; }
+  .btn-danger { background: #e74c3c; }
+  .btn-sm { padding: 6px 12px; font-size: 12px; width: auto; margin: 0; }
+  .btn:disabled { opacity: 0.5; }
+  .tab { display: flex; background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin: 0 20px 20px; flex-wrap: wrap; }
+  .tab-btn { flex: 1; min-width: 55px; padding: 12px 3px; border: none; background: white; cursor: pointer; font-size: 11px; text-align: center; }
+  .tab-btn.active { background: #FF8200; color: white; }
+  .member-row { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #f0f0f0; }
+  .member-row:last-child { border-bottom: none; }
+  .member-row .info .name { font-size: 15px; font-weight: bold; }
+  .member-row .info .detail { font-size: 12px; color: #999; margin-top: 3px; }
+  .store-row { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #f0f0f0; }
+  .store-row:last-child { border-bottom: none; }
+  .login-wrap { max-width: 400px; margin: 80px auto; padding: 0 20px; }
+  .btn-login { width: 100%; padding: 14px; background: #FF8200; color: white; border: none; border-radius: 8px; font-size: 16px; cursor: pointer; }
+  .error { color: #e74c3c; text-align: center; margin-top: 10px; display: none; font-size: 14px; }
+  .loading { text-align: center; padding: 30px; color: #999; }
+  .result { padding: 15px; border-radius: 8px; margin-top: 10px; text-align: center; font-weight: bold; display: none; }
   .result.success { background: #d4edda; color: #155724; }
   .result.error { background: #f8d7da; color: #721c24; }
-  .login-form { max-width: 400px; margin: 50px auto; }
-  .tab { display: flex; margin-bottom: 20px; background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
-  .tab-btn { flex: 1; padding: 14px 5px; border: none; background: white; cursor: pointer; font-size: 13px; }
-  .tab-btn.active { background: #FF8200; color: white; }
-  .coupon-result { background: #fff3e0; border: 2px solid #FF8200; border-radius: 12px; padding: 20px; text-align: center; margin-top: 15px; display: none; }
-  .coupon-result .coupon-title { font-size: 20px; font-weight: bold; color: #FF8200; margin-bottom: 8px; }
-  .coupon-result .coupon-desc { font-size: 14px; color: #666; margin-top: 8px; }
-  .stamp-progress { display: flex; gap: 6px; justify-content: center; flex-wrap: wrap; margin: 15px 0; }
-  .stamp-dot { width: 32px; height: 32px; border-radius: 50%; border: 2px dashed #ccc; display: flex; align-items: center; justify-content: center; font-size: 12px; color: #ccc; }
-  .stamp-dot.filled { border: 2px solid #FF8200; background: #FFF3E8; color: #FF8200; }
-  .campaign-select { background: #fff8f2; border-radius: 8px; padding: 12px; margin-bottom: 12px; cursor: pointer; border: 2px solid transparent; }
-  .campaign-select.selected { border-color: #FF8200; }
-  .campaign-select .c-title { font-weight: bold; font-size: 14px; }
-  .campaign-select .c-info { font-size: 12px; color: #999; margin-top: 4px; }
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; }
+  .badge-active { background: #e8f5e9; color: #27ae60; }
+  .badge-used { background: #f5f5f5; color: #999; }
+  .badge-expired { background: #fce4ec; color: #e74c3c; }
+  .tag-chip { display: inline-block; padding: 3px 10px; border-radius: 12px; font-size: 12px; margin: 2px 4px 2px 0; color: white; }
+  .tag-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #f0f0f0; }
+  .tag-row:last-child { border-bottom: none; }
+  .campaign-card { background: #fff8f2; border-radius: 10px; padding: 15px; margin-bottom: 12px; border: 1px solid #ede5dc; }
+  .campaign-card .c-title { font-size: 15px; font-weight: bold; }
+  .campaign-card .c-info { font-size: 12px; color: #999; margin-top: 4px; }
+  .campaign-card .c-stats { display: flex; gap: 15px; margin-top: 8px; font-size: 13px; }
+  .campaign-card .c-stats span { color: #FF8200; font-weight: bold; }
+  .form-row { display: flex; gap: 10px; }
+  .form-row > * { flex: 1; }
 </style>
 </head>
 <body>
 
-<div id="app"><div style="text-align:center;padding:50px;color:#999">載入中...</div></div>
+<div id="app"><div class="loading">載入中...</div></div>
 
 <script>
 const API = 'https://mamaja-member-api.renechen188.workers.dev';
-
-let currentStaff = null;
-let currentMember = null;
-let activeCampaigns = [];
-let selectedCampaignId = null;
+let currentTab = 'overview';
+let allTags = [];
 
 function showLogin() {
   document.getElementById('app').innerHTML = `
-    <div class="header"><h1>麻媽家 店員後台</h1></div>
-    <div class="section">
-      <div class="login-form card">
-        <h2>店員登入</h2>
+    <div style="background:linear-gradient(135deg,#cc6600,#FF8200);padding:40px 20px;text-align:center;color:white;">
+      <h1 style="font-size:22px;">麻媽家</h1>
+      <p style="opacity:0.8;margin-top:5px;">LINE 會員管理後台</p>
+    </div>
+    <div class="login-wrap">
+      <div class="card">
+        <h2 style="margin-bottom:20px;">管理員登入</h2>
         <input type="text" id="username" placeholder="帳號">
         <input type="password" id="password" placeholder="密碼">
-        <button class="btn btn-primary" onclick="login()">登入</button>
-        <div id="login-error" style="color:#e74c3c;text-align:center;margin-top:10px;display:none">帳號或密碼錯誤</div>
+        <button class="btn-login" onclick="login()">登入</button>
+        <div class="error" id="err">帳號或密碼錯誤，或權限不足</div>
       </div>
     </div>
   `;
@@ -77,258 +93,502 @@ async function login() {
     body: JSON.stringify({ username, password })
   });
   const data = await res.json();
-  if (data.success) {
-    currentStaff = data.staff;
-    showMain();
+  if (data.success && data.staff.role === 'admin') {
+    showAdmin();
   } else {
-    document.getElementById('login-error').style.display = 'block';
+    document.getElementById('err').style.display = 'block';
   }
 }
 
-function showMain() {
+async function showAdmin() {
   document.getElementById('app').innerHTML = `
     <div class="header">
-      <h1>麻媽家 店員後台</h1>
-      <div class="staff-info">${currentStaff.name}｜${currentStaff.store}</div>
+      <h1>麻媽家 管理後台</h1>
+      <button class="logout" onclick="showLogin()">登出</button>
     </div>
-    <div class="section">
-      <div class="tab">
-        <button class="tab-btn active" onclick="switchTab('coupon')" id="tab-coupon">🎫 核銷券</button>
-        <button class="tab-btn" onclick="switchTab('stamp')" id="tab-stamp">🎯 蓋章</button>
-        <button class="tab-btn" onclick="switchTab('query')" id="tab-query">🔍 查詢</button>
-      </div>
-      <div id="tab-content"></div>
+    <div class="tab" style="margin-top:20px;">
+      <button class="tab-btn active" onclick="switchTab('overview')" id="tab-overview">📊 總覽</button>
+      <button class="tab-btn" onclick="switchTab('members')" id="tab-members">👥 會員</button>
+      <button class="tab-btn" onclick="switchTab('tags')" id="tab-tags">🏷️ 標籤</button>
+      <button class="tab-btn" onclick="switchTab('send')" id="tab-send">🎫 發券</button>
+      <button class="tab-btn" onclick="switchTab('stamps')" id="tab-stamps">🎯 集章</button>
+      <button class="tab-btn" onclick="switchTab('coupons')" id="tab-coupons">📋 券紀錄</button>
+      <button class="tab-btn" onclick="switchTab('export')" id="tab-export">📤 匯出</button>
     </div>
+    <div id="tab-content"></div>
   `;
-  showCouponTab();
+  await loadOverview();
 }
 
-function switchTab(tab) {
-  currentMember = null;
-  selectedCampaignId = null;
-  ['coupon','stamp','query'].forEach(t => {
+async function switchTab(tab) {
+  currentTab = tab;
+  ['overview','members','tags','send','stamps','coupons','export'].forEach(t => {
     document.getElementById(`tab-${t}`).className = 'tab-btn' + (t === tab ? ' active' : '');
   });
-  if (tab === 'coupon') showCouponTab();
-  if (tab === 'stamp') showStampTab();
-  if (tab === 'query') showQueryTab();
+  if (tab === 'overview') await loadOverview();
+  if (tab === 'members') await loadMembers();
+  if (tab === 'tags') await loadTags();
+  if (tab === 'send') await showSendCoupon();
+  if (tab === 'stamps') await loadStampCampaigns();
+  if (tab === 'coupons') await loadCoupons();
+  if (tab === 'export') showExport();
 }
 
-// ── 核銷券 ──
+// ── 總覽 ──
 
-function showCouponTab() {
+async function loadOverview() {
+  document.getElementById('tab-content').innerHTML = '<div class="loading">載入中...</div>';
+  const res = await fetch(`${API}/api/admin/stats`);
+  const data = await res.json();
+  if (data.error) { document.getElementById('tab-content').innerHTML = '<div class="loading">載入失敗</div>'; return; }
+
+  const storeHTML = data.stores.map(s => `
+    <div class="store-row">
+      <div>${s.store || '未知'}</div>
+      <div style="font-weight:bold;color:#FF8200">${s.count} 人</div>
+    </div>
+  `).join('');
+
+  const tagHTML = (data.tagStats || []).map(t => `
+    <div class="store-row">
+      <div>${t.tag}</div>
+      <div style="font-weight:bold;color:#FF8200">${t.count} 人</div>
+    </div>
+  `).join('');
+
   document.getElementById('tab-content').innerHTML = `
-    <div class="card">
-      <h2>🎫 核銷優惠券</h2>
-      <p style="font-size:13px;color:#999;margin-bottom:15px;">請客人出示會員卡上的核銷碼</p>
-      <input type="text" id="coupon-code" placeholder="輸入核銷碼（6碼數字）" maxlength="6" inputmode="numeric" style="letter-spacing:3px;font-size:18px;text-align:center;">
-      <button class="btn btn-primary" onclick="redeemCoupon()">確認核銷</button>
-      <div class="coupon-result" id="coupon-result">
-        <div class="coupon-title" id="coupon-title"></div>
-        <div class="coupon-desc" id="coupon-desc"></div>
-        <div style="margin-top:15px;font-size:13px;color:#27ae60;font-weight:bold">✅ 核銷成功！</div>
+    <div class="stats-grid">
+      <div class="stat-card"><div class="num">${data.totalMembers}</div><div class="label">總會員數</div></div>
+      <div class="stat-card"><div class="num">${data.birthdayFilled || 0}</div><div class="label">已填生日</div></div>
+      <div class="stat-card"><div class="num">${data.activeCoupons}</div><div class="label">待使用優惠券</div></div>
+      <div class="stat-card"><div class="num">${data.usedCoupons}</div><div class="label">已核銷券數</div></div>
+    </div>
+    <div class="section">
+      <div class="card">
+        <h2>各門店會員數</h2>
+        ${storeHTML || '<p style="color:#999">尚無資料</p>'}
       </div>
-      <div class="result error" id="coupon-error"></div>
+      ${tagHTML ? `<div class="card"><h2>標籤統計</h2>${tagHTML}</div>` : ''}
     </div>
   `;
 }
 
-async function redeemCoupon() {
-  const code = document.getElementById('coupon-code').value;
-  if (!code || code.length < 6) { alert('請輸入完整核銷碼'); return; }
+// ── 會員列表 ──
 
-  const res = await fetch(`${API}/api/coupon/redeem`, {
+async function loadMembers() {
+  document.getElementById('tab-content').innerHTML = '<div class="loading">載入中...</div>';
+  const res = await fetch(`${API}/api/admin/members`);
+  const data = await res.json();
+  const members = data.members || [];
+
+  const memberHTML = members.map(m => {
+    const tags = (m.tags || []).map(t => `<span class="tag-chip" style="background:#FF8200">${t}</span>`).join('');
+    return `
+    <div class="member-row">
+      <div class="info">
+        <div class="name">${m.name || '未命名'}</div>
+        <div class="detail">${m.phone || ''} ｜ 生日 ${m.birthday || '未填'} ｜ ${new Date(m.created_at).toLocaleDateString('zh-TW')}</div>
+        <div style="margin-top:4px;">${tags}</div>
+      </div>
+    </div>`;
+  }).join('');
+
+  document.getElementById('tab-content').innerHTML = `
+    <div class="section" style="padding-top:20px;">
+      <div class="card">
+        <h2>所有會員（${members.length} 人）</h2>
+        ${memberHTML || '<p style="color:#999;text-align:center;padding:20px;">尚無會員</p>'}
+      </div>
+    </div>
+  `;
+}
+
+// ── 標籤管理 ──
+
+async function loadTags() {
+  document.getElementById('tab-content').innerHTML = '<div class="loading">載入中...</div>';
+  const res = await fetch(`${API}/api/admin/tags`);
+  const data = await res.json();
+  allTags = data.tags || [];
+
+  const tagListHTML = allTags.map(t => `
+    <div class="tag-row">
+      <div>
+        <span class="tag-chip" style="background:${t.color}">${t.name}</span>
+        <span style="font-size:12px;color:#999;margin-left:4px">${t.type === 'auto' ? '自動' : '手動'} ｜ ${t.member_count} 人</span>
+      </div>
+      ${t.type === 'manual' ? `<button class="btn btn-danger btn-sm" onclick="deleteTag('${t.name}')">刪除</button>` : ''}
+    </div>
+  `).join('');
+
+  document.getElementById('tab-content').innerHTML = `
+    <div class="section" style="padding-top:20px;">
+      <div class="card">
+        <h2>新增標籤</h2>
+        <div class="form-row">
+          <input type="text" id="tag-name" placeholder="標籤名稱" style="flex:2">
+          <input type="color" id="tag-color" value="#FF8200" style="flex:0.5;padding:5px;height:43px;">
+        </div>
+        <button class="btn btn-primary" onclick="addTag()">新增標籤</button>
+      </div>
+      <div class="card">
+        <h2>自動標籤</h2>
+        <p style="font-size:13px;color:#999;margin-bottom:12px">自動判斷：新會員（30天內）、壽星月（當月生日）、沉睡客（60天未用券）</p>
+        <button class="btn btn-success" onclick="runAutoTag()">執行自動標籤</button>
+        <div class="result" id="auto-tag-result"></div>
+      </div>
+      <div class="card">
+        <h2>現有標籤</h2>
+        ${tagListHTML || '<p style="color:#999">尚無標籤</p>'}
+      </div>
+    </div>
+  `;
+}
+
+async function addTag() {
+  const name = document.getElementById('tag-name').value.trim();
+  const color = document.getElementById('tag-color').value;
+  if (!name) return alert('請輸入標籤名稱');
+
+  await fetch(`${API}/api/admin/tags`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ code, staff: currentStaff.name, store: currentStaff.store })
+    body: JSON.stringify({ name, color })
   });
-  const data = await res.json();
+  await loadTags();
+}
 
-  const resultEl = document.getElementById('coupon-result');
-  const errorEl = document.getElementById('coupon-error');
+async function deleteTag(name) {
+  if (!confirm(`確定刪除標籤「${name}」？已貼此標籤的會員會自動移除`)) return;
+  await fetch(`${API}/api/admin/tags`, {
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name })
+  });
+  await loadTags();
+}
+
+async function runAutoTag() {
+  const btn = event.target;
+  btn.disabled = true;
+  btn.textContent = '執行中...';
+
+  const res = await fetch(`${API}/api/admin/auto-tag`, { method: 'POST' });
+  const data = await res.json();
+  const el = document.getElementById('auto-tag-result');
+  el.style.display = 'block';
 
   if (data.success) {
-    document.getElementById('coupon-title').textContent = data.coupon.title;
-    document.getElementById('coupon-desc').textContent = data.coupon.description || '';
-    resultEl.style.display = 'block';
-    errorEl.style.display = 'none';
-    document.getElementById('coupon-code').value = '';
+    const details = (data.auto_tags || []).map(t => `${t.tag}: ${t.count} 人`).join('、');
+    el.className = 'result success';
+    el.innerHTML = `✅ 自動標籤完成！${details || '無符合條件的會員'}`;
   } else {
-    errorEl.textContent = data.error;
-    errorEl.style.display = 'block';
-    resultEl.style.display = 'none';
-  }
-}
-
-// ── 蓋章 ──
-
-async function showStampTab() {
-  document.getElementById('tab-content').innerHTML = `
-    <div class="card">
-      <h2>🎯 集章蓋章</h2>
-      <input type="tel" id="stamp-phone" placeholder="輸入客人手機號碼" maxlength="10">
-      <button class="btn btn-primary" onclick="lookupForStamp()">查詢會員</button>
-    </div>
-    <div id="stamp-area"></div>
-  `;
-
-  try {
-    const res = await fetch(`${API}/api/stamp/active`);
-    const data = await res.json();
-    activeCampaigns = data.campaigns || [];
-  } catch (e) {
-    activeCampaigns = [];
-  }
-}
-
-async function lookupForStamp() {
-  const phone = document.getElementById('stamp-phone').value;
-  if (!phone) return alert('請輸入手機號碼');
-
-  const res = await fetch(`${API}/api/member/by-phone?phone=${phone}`);
-  const data = await res.json();
-
-  if (data.error) {
-    document.getElementById('stamp-area').innerHTML = `
-      <div class="card" style="text-align:center;color:#e74c3c">找不到此會員，請確認手機號碼</div>`;
-    return;
+    el.className = 'result error';
+    el.innerHTML = '執行失敗';
   }
 
-  currentMember = data.member;
-
-  if (activeCampaigns.length === 0) {
-    document.getElementById('stamp-area').innerHTML = `
-      <div class="card" style="text-align:center;color:#999">目前沒有進行中的集章活動</div>`;
-    return;
-  }
-
-  const memberStampsRes = await fetch(`${API}/api/stamp/active?line_id=${encodeURIComponent(currentMember.line_id)}`);
-  const memberStampsData = await memberStampsRes.json();
-  const campaignsWithProgress = memberStampsData.campaigns || activeCampaigns;
-
-  let html = `<div class="card">
-    <div class="member-info">
-      <div class="label">會員</div>
-      <div class="name">${currentMember.name || currentMember.phone}</div>
-    </div>
-    <h2>選擇活動蓋章</h2>`;
-
-  campaignsWithProgress.forEach(c => {
-    const myStamps = c.my_stamps || 0;
-    const completed = myStamps >= c.stamp_goal;
-    let dotsHTML = '';
-    for (let i = 1; i <= c.stamp_goal; i++) {
-      const filled = i <= myStamps ? ' filled' : '';
-      dotsHTML += `<div class="stamp-dot${filled}">${i <= myStamps ? '✓' : i}</div>`;
-    }
-
-    html += `
-    <div class="campaign-select" id="cs-${c.id}" onclick="selectCampaign(${c.id})">
-      <div class="c-title">${c.icon || '🍲'} ${c.title}</div>
-      <div class="c-info">進度 ${myStamps}/${c.stamp_goal}${completed ? ' ✅ 已集滿' : ''}</div>
-      <div class="stamp-progress">${dotsHTML}</div>
-    </div>`;
-  });
-
-  html += `
-    <button class="btn btn-success" id="stamp-btn" onclick="doStamp()" disabled>請先選擇活動</button>
-    <div class="result" id="stamp-result"></div>
-  </div>`;
-
-  document.getElementById('stamp-area').innerHTML = html;
-}
-
-function selectCampaign(id) {
-  selectedCampaignId = id;
-  document.querySelectorAll('.campaign-select').forEach(el => el.classList.remove('selected'));
-  document.getElementById(`cs-${id}`).classList.add('selected');
-  const btn = document.getElementById('stamp-btn');
   btn.disabled = false;
-  btn.textContent = '確認蓋章';
+  btn.textContent = '執行自動標籤';
 }
 
-async function doStamp() {
-  if (!selectedCampaignId || !currentMember) return;
-  const btn = document.getElementById('stamp-btn');
-  btn.disabled = true;
-  btn.textContent = '蓋章中...';
+// ── 發券（支援標籤篩選）──
 
-  const res = await fetch(`${API}/api/stamp/add`, {
+async function showSendCoupon() {
+  const tagsRes = await fetch(`${API}/api/admin/tags`);
+  const tagsData = await tagsRes.json();
+  allTags = tagsData.tags || [];
+
+  const tagOptions = allTags.map(t => `<option value="tag:${t.name}">🏷️ ${t.name}（${t.member_count} 人）</option>`).join('');
+  const monthOptions = Array.from({length: 12}, (_, i) => {
+    const m = i + 1;
+    return `<option value="birthday:${m}">🎂 ${m} 月壽星</option>`;
+  }).join('');
+
+  document.getElementById('tab-content').innerHTML = `
+    <div class="section" style="padding-top:20px;">
+      <div class="card">
+        <h2>🎫 發送優惠券</h2>
+        <label style="font-size:13px;color:#666;display:block;margin-bottom:5px;">券類型</label>
+        <select id="c-type">
+          <option value="gift">🎁 贈品券（免費兌換品項）</option>
+          <option value="discount">💰 折抵券（折抵金額）</option>
+        </select>
+        <label style="font-size:13px;color:#666;display:block;margin-bottom:5px;">券名稱</label>
+        <input type="text" id="c-title" placeholder="例：秋季限定贈品券">
+        <label style="font-size:13px;color:#666;display:block;margin-bottom:5px;">說明</label>
+        <input type="text" id="c-desc" placeholder="例：消費滿 $150 送招牌小菜一份">
+        <label style="font-size:13px;color:#666;display:block;margin-bottom:5px;">折抵金額（贈品券填 0）</label>
+        <input type="number" id="c-discount" placeholder="0" value="0">
+        <label style="font-size:13px;color:#666;display:block;margin-bottom:5px;">有效天數</label>
+        <input type="number" id="c-days" placeholder="90" value="90">
+        <label style="font-size:13px;color:#666;display:block;margin-bottom:5px;">發送對象</label>
+        <select id="c-target">
+          <option value="all">📢 全部會員</option>
+          ${tagOptions}
+          ${monthOptions}
+        </select>
+        <button class="btn btn-primary" onclick="sendCoupon()">發送優惠券</button>
+        <div class="result" id="send-result"></div>
+      </div>
+    </div>
+  `;
+}
+
+async function sendCoupon() {
+  const type = document.getElementById('c-type').value;
+  const title = document.getElementById('c-title').value;
+  const desc = document.getElementById('c-desc').value;
+  const discount = parseInt(document.getElementById('c-discount').value) || 0;
+  const days = parseInt(document.getElementById('c-days').value) || 90;
+  const targetVal = document.getElementById('c-target').value;
+
+  if (!title) { alert('請輸入券名稱'); return; }
+
+  let target;
+  let targetLabel;
+  if (targetVal === 'all') {
+    target = 'all';
+    targetLabel = '全部會員';
+  } else if (targetVal.startsWith('tag:')) {
+    const tagName = targetVal.substring(4);
+    target = { tag: tagName };
+    targetLabel = `標籤「${tagName}」`;
+  } else if (targetVal.startsWith('birthday:')) {
+    const month = parseInt(targetVal.substring(9));
+    target = { birthday_month: month };
+    targetLabel = `${month} 月壽星`;
+  }
+
+  if (!confirm(`確定發送「${title}」給 ${targetLabel}？`)) return;
+
+  const res = await fetch(`${API}/api/admin/send-coupon`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ type, title, description: desc, discount, target, expires_days: days })
+  });
+  const data = await res.json();
+  const el = document.getElementById('send-result');
+  el.style.display = 'block';
+  if (data.success) {
+    el.className = 'result success';
+    el.innerHTML = `✅ 成功發送給 ${data.sent} 位會員！`;
+  } else {
+    el.className = 'result error';
+    el.innerHTML = `❌ 發送失敗：${data.error}`;
+  }
+}
+
+// ── 集章活動管理 ──
+
+async function loadStampCampaigns() {
+  document.getElementById('tab-content').innerHTML = '<div class="loading">載入中...</div>';
+  const res = await fetch(`${API}/api/admin/stamp-campaigns`);
+  const data = await res.json();
+  const campaigns = data.campaigns || [];
+
+  const campaignHTML = campaigns.map(c => `
+    <div class="campaign-card">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+        <div>
+          <div class="c-title">${c.icon || '🍲'} ${c.title}</div>
+          <div class="c-info">${c.description || ''}</div>
+          <div class="c-info">${c.start_date} ~ ${c.end_date}</div>
+        </div>
+        <span class="badge ${c.status === 'active' ? 'badge-active' : 'badge-used'}">${c.status === 'active' ? '進行中' : '已結束'}</span>
+      </div>
+      <div class="c-stats">
+        <div>目標 <span>${c.stamp_goal} 章</span></div>
+        <div>參與 <span>${c.participants} 人</span></div>
+        <div>完成 <span>${c.completed_count} 人</span></div>
+      </div>
+      <div class="c-info">獎勵：${c.reward_title || '—'}</div>
+      ${c.status === 'active' ? `<button class="btn btn-danger btn-sm" style="margin-top:10px;" onclick="endCampaign(${c.id},'${c.title}')">結束活動</button>` : ''}
+    </div>
+  `).join('');
+
+  document.getElementById('tab-content').innerHTML = `
+    <div class="section" style="padding-top:20px;">
+      <div class="card">
+        <h2>建立新活動</h2>
+        <input type="text" id="sc-title" placeholder="活動名稱">
+        <input type="text" id="sc-desc" placeholder="活動說明">
+        <div class="form-row">
+          <input type="number" id="sc-goal" placeholder="集章目標" min="1" value="5">
+          <input type="text" id="sc-icon" placeholder="圖示" value="🍲" style="flex:0.5">
+        </div>
+        <input type="text" id="sc-reward" placeholder="獎勵名稱（例：招牌小菜一份）">
+        <input type="text" id="sc-reward-desc" placeholder="獎勵說明">
+        <div class="form-row">
+          <div>
+            <label style="font-size:12px;color:#999">開始日期</label>
+            <input type="date" id="sc-start">
+          </div>
+          <div>
+            <label style="font-size:12px;color:#999">結束日期</label>
+            <input type="date" id="sc-end">
+          </div>
+        </div>
+        <div class="form-row">
+          <div>
+            <label style="font-size:12px;color:#999">獎勵券有效天數</label>
+            <input type="number" id="sc-reward-days" value="30">
+          </div>
+          <div>
+            <label style="font-size:12px;color:#999">活動主色</label>
+            <input type="color" id="sc-color" value="#FF8200" style="padding:5px;height:43px;">
+          </div>
+        </div>
+        <button class="btn btn-primary" onclick="createCampaign()">建立活動</button>
+        <div class="result" id="campaign-result"></div>
+      </div>
+      <div class="card">
+        <h2>所有活動</h2>
+        ${campaignHTML || '<p style="color:#999;text-align:center;padding:10px;">尚無活動</p>'}
+      </div>
+    </div>
+  `;
+}
+
+async function createCampaign() {
+  const title = document.getElementById('sc-title').value;
+  const description = document.getElementById('sc-desc').value;
+  const stamp_goal = parseInt(document.getElementById('sc-goal').value);
+  const icon = document.getElementById('sc-icon').value;
+  const reward_title = document.getElementById('sc-reward').value;
+  const reward_description = document.getElementById('sc-reward-desc').value;
+  const start_date = document.getElementById('sc-start').value;
+  const end_date = document.getElementById('sc-end').value;
+  const reward_expires_days = parseInt(document.getElementById('sc-reward-days').value) || 30;
+  const color = document.getElementById('sc-color').value;
+
+  if (!title || !stamp_goal || !start_date || !end_date) {
+    alert('請填寫活動名稱、集章目標、開始/結束日期');
+    return;
+  }
+
+  const res = await fetch(`${API}/api/admin/stamp-campaign`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      phone: currentMember.phone,
-      campaign_id: selectedCampaignId,
-      staff: currentStaff.name,
-      store: currentStaff.store
+      title, description, stamp_goal, reward_title, reward_description,
+      reward_discount: 0, reward_expires_days, start_date, end_date, icon, color
     })
   });
   const data = await res.json();
-  const el = document.getElementById('stamp-result');
+  const el = document.getElementById('campaign-result');
   el.style.display = 'block';
 
   if (data.success) {
     el.className = 'result success';
-    let msg = `✅ 蓋章成功！${data.member_name || ''} ${data.stamps}/${data.goal}`;
-    if (data.completed && data.reward) {
-      msg += `\n🎉 集滿了！獎勵券「${data.reward.title}」已自動發送`;
-    }
-    el.innerHTML = msg.replace('\n', '<br>');
-    lookupForStamp();
+    el.innerHTML = '✅ 活動建立成功！';
+    setTimeout(() => loadStampCampaigns(), 1000);
   } else {
     el.className = 'result error';
-    el.innerHTML = data.error;
-    btn.disabled = false;
-    btn.textContent = '確認蓋章';
+    el.innerHTML = `❌ 建立失敗：${data.error}`;
   }
 }
 
-// ── 查詢 ──
+async function endCampaign(id, title) {
+  if (!confirm(`確定結束活動「${title}」？結束後無法恢復`)) return;
 
-function showQueryTab() {
-  document.getElementById('tab-content').innerHTML = `
-    <div class="card">
-      <h2>查詢會員</h2>
-      <input type="tel" id="search-phone" placeholder="輸入手機號碼" maxlength="10">
-      <button class="btn btn-primary" onclick="searchMember()">查詢</button>
-    </div>
-    <div id="member-result"></div>
-  `;
+  await fetch(`${API}/api/admin/stamp-campaign/end`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ campaign_id: id })
+  });
+  await loadStampCampaigns();
 }
 
-async function searchMember() {
-  const phone = document.getElementById('search-phone').value;
-  if (!phone) return alert('請輸入手機號碼');
+// ── 券紀錄 ──
 
-  const res = await fetch(`${API}/api/member/by-phone?phone=${phone}`);
+async function loadCoupons() {
+  document.getElementById('tab-content').innerHTML = '<div class="loading">載入中...</div>';
+  const res = await fetch(`${API}/api/admin/coupons`);
   const data = await res.json();
+  const coupons = data.coupons || [];
 
-  if (data.error) {
-    document.getElementById('member-result').innerHTML = `
-      <div class="card" style="text-align:center;color:#e74c3c">找不到此會員</div>`;
-    return;
-  }
-
-  currentMember = data.member;
-  const activeCoupons = (data.coupons || []).filter(c => c.status === 'active');
-  const tags = data.tags || [];
-  const tagsHTML = tags.length > 0
-    ? tags.map(t => `<span style="display:inline-block;background:#FFF3E8;color:#FF8200;font-size:11px;padding:2px 8px;border-radius:10px;margin-right:4px;">${t}</span>`).join('')
-    : '<span style="color:#999;font-size:12px">無標籤</span>';
-
-  document.getElementById('member-result').innerHTML = `
-    <div class="card">
-      <div class="member-info">
-        <div class="name">${currentMember.name || '未命名'}</div>
-        <div class="label">${currentMember.phone || ''} ｜ 可用券 ${activeCoupons.length} 張</div>
-        <div style="margin-top:8px">${tagsHTML}</div>
+  const couponHTML = coupons.map(c => {
+    const isGift = c.type === 'gift' || c.discount === 0;
+    const amountText = isGift ? '🎁 贈品' : `NT$${c.discount}`;
+    return `
+    <div style="padding:12px 0;border-bottom:1px solid #f0f0f0;">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+        <div>
+          <div style="font-size:14px;font-weight:bold;">${c.title} <span style="color:#FF8200">${amountText}</span></div>
+          <div style="font-size:12px;color:#999;margin-top:3px;">${c.name || '未命名'} ｜ ${c.phone || ''} ｜ 碼：${c.code}</div>
+          <div style="font-size:12px;color:#999;">效期：${new Date(c.expires_at).toLocaleDateString('zh-TW')}</div>
+          ${c.status === 'used' ? `<div style="font-size:12px;color:#999;">核銷：${new Date(c.used_at).toLocaleDateString('zh-TW')} ｜ ${c.used_store || ''} ｜ ${c.used_by || ''}</div>` : ''}
+        </div>
+        <span class="badge badge-${c.status}">${c.status === 'active' ? '未使用' : c.status === 'used' ? '已使用' : '已過期'}</span>
       </div>
-      <div style="font-size:13px;color:#999;">
-        <div>生日：${currentMember.birthday || '未填寫'}</div>
-        <div>加入：${new Date(currentMember.created_at).toLocaleDateString('zh-TW')}</div>
+    </div>`;
+  }).join('');
+
+  document.getElementById('tab-content').innerHTML = `
+    <div class="section" style="padding-top:20px;">
+      <div class="card">
+        <h2>優惠券紀錄（最近 100 筆）</h2>
+        ${couponHTML || '<p style="color:#999;text-align:center;padding:20px;">尚無紀錄</p>'}
       </div>
     </div>
   `;
+}
+
+// ── 匯出 ──
+
+function showExport() {
+  document.getElementById('tab-content').innerHTML = `
+    <div class="section" style="padding-top:20px;">
+      <div class="card">
+        <h2>匯出資料</h2>
+        <button class="btn btn-success" onclick="exportMembers()">📥 匯出會員名單 CSV</button>
+        <button class="btn btn-primary" onclick="exportCoupons()">📥 匯出優惠券紀錄 CSV</button>
+      </div>
+    </div>
+  `;
+}
+
+async function exportMembers() {
+  const res = await fetch(`${API}/api/admin/members`);
+  const data = await res.json();
+  const members = data.members || [];
+  const csv = [
+    ['姓名','手機','生日','標籤','加入日期'].join(','),
+    ...members.map(m => [
+      m.name || '', m.phone || '', m.birthday || '',
+      (m.tags || []).join('/'),
+      new Date(m.created_at).toLocaleDateString('zh-TW')
+    ].join(','))
+  ].join('\n');
+  downloadCSV(csv, `麻媽家會員_${today()}.csv`);
+}
+
+async function exportCoupons() {
+  const res = await fetch(`${API}/api/admin/coupons`);
+  const data = await res.json();
+  const coupons = data.coupons || [];
+  const csv = [
+    ['會員','手機','券名稱','類型','折抵金額','核銷碼','狀態','到期日','核銷時間','核銷門店'].join(','),
+    ...coupons.map(c => [
+      c.name || '', c.phone || '', c.title, c.type || '', c.discount, c.code,
+      c.status === 'active' ? '未使用' : c.status === 'used' ? '已使用' : '已過期',
+      new Date(c.expires_at).toLocaleDateString('zh-TW'),
+      c.used_at ? new Date(c.used_at).toLocaleDateString('zh-TW') : '',
+      c.used_store || ''
+    ].join(','))
+  ].join('\n');
+  downloadCSV(csv, `麻媽家優惠券_${today()}.csv`);
+}
+
+function downloadCSV(csv, filename) {
+  const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename; a.click();
+}
+
+function today() {
+  return new Date().toLocaleDateString('zh-TW').replace(/\//g, '-');
 }
 
 showLogin();
