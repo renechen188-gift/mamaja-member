@@ -263,38 +263,100 @@
     line-height: 1.7;
   }
 
-  /* COMING SOON */
-  .coming-soon-badge {
-    display: inline-block;
-    background: var(--orange-light);
-    color: var(--orange-dark);
-    font-size: 10px; font-weight: 700;
-    letter-spacing: 1px;
-    padding: 3px 10px;
-    border-radius: 20px;
+  /* STAMP CAMPAIGNS */
+  .activity-section {
+    padding: 16px 16px 100px;
+    display: flex; flex-direction: column; gap: 16px;
   }
-  .coming-soon-wrap {
-    padding: 60px 16px 100px;
-  }
-  .coming-soon-card {
+  .stamp-card {
     background: white;
-    border-radius: 20px;
-    border: 1.5px dashed #E0D8D0;
-    padding: 44px 28px;
+    border-radius: 16px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+  }
+  .stamp-card-header {
+    padding: 18px 20px 14px;
+    display: flex; align-items: center; gap: 12px;
+  }
+  .stamp-card-icon {
+    width: 44px; height: 44px;
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px;
+    flex-shrink: 0;
+  }
+  .stamp-card-info { flex: 1; }
+  .stamp-card-title {
+    font-family: 'Noto Serif TC';
+    font-size: 15px; font-weight: 700;
+    color: var(--text);
+    margin-bottom: 2px;
+  }
+  .stamp-card-desc {
+    font-size: 12px; color: var(--muted);
+    line-height: 1.5;
+  }
+  .stamp-card-date {
+    font-size: 11px; color: #C0B0A0;
+    margin-top: 2px;
+  }
+  .stamp-progress {
+    padding: 0 20px 18px;
+  }
+  .stamp-dots {
+    display: flex; gap: 8px;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-bottom: 10px;
+  }
+  .stamp-dot {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    border: 2px dashed #D0C8C0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px;
+    color: #D0C8C0;
+    transition: all 0.3s;
+  }
+  .stamp-dot.filled {
+    border: 2px solid var(--orange);
+    background: var(--orange-light);
+    color: var(--orange);
+  }
+  .stamp-dot.reward-dot {
+    border-color: #E8A040;
+    color: #E8A040;
+  }
+  .stamp-dot.reward-dot.filled {
+    background: #FFF8E8;
+    border-color: #E8A040;
+    color: #E8A040;
+  }
+  .stamp-bar {
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .stamp-bar-text {
+    font-size: 12px; color: var(--muted);
+  }
+  .stamp-bar-text strong {
+    color: var(--orange); font-weight: 700;
+  }
+  .stamp-reward-info {
+    font-size: 11px;
+    color: #7A4010;
+    background: var(--orange-light);
+    padding: 8px 14px;
+    border-radius: 8px;
     text-align: center;
   }
-  .coming-soon-icon {
-    font-size: 40px; margin-bottom: 14px; opacity: 0.35;
-  }
-  .coming-soon-title {
-    font-family: 'Noto Serif TC';
-    font-size: 17px; font-weight: 700;
-    color: var(--text);
-    margin: 10px 0 6px;
-  }
-  .coming-soon-sub {
-    font-size: 12.5px; color: var(--muted);
-    line-height: 1.8;
+  .stamp-completed-badge {
+    display: inline-block;
+    background: var(--orange);
+    color: white;
+    font-size: 11px; font-weight: 700;
+    padding: 3px 12px;
+    border-radius: 20px;
   }
 
   /* PROFILE TAB */
@@ -325,12 +387,39 @@
   .profile-row:last-child { border-bottom: none; }
   .profile-row-label { color: var(--muted); }
   .profile-row-value { color: var(--text); font-weight: 500; }
-  .profile-row-comingsoon {
-    padding: 20px 18px;
+  .birthday-row {
+    padding: 13px 18px;
+    display: flex; justify-content: space-between; align-items: center;
+    border-bottom: 0.5px solid var(--border);
+    font-size: 14px;
+    gap: 10px;
+  }
+  .birthday-input {
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    padding: 7px 10px;
+    font-size: 14px;
+    font-family: 'Noto Sans TC';
+    color: var(--text);
+    background: var(--cream);
+    width: 130px;
     text-align: center;
-    color: var(--muted);
-    font-size: 12.5px;
-    line-height: 1.7;
+  }
+  .birthday-input:focus { outline: none; border-color: var(--orange); }
+  .birthday-save {
+    background: var(--orange);
+    color: white;
+    font-size: 12px; font-weight: 700;
+    padding: 7px 14px;
+    border-radius: 20px;
+    border: none;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .birthday-save:disabled { opacity: 0.5; }
+  .birthday-saved {
+    font-size: 12px; color: #4CAF50; font-weight: 500;
+    display: none;
   }
 
   /* MODAL (共用：核銷 / 註冊) */
@@ -484,7 +573,7 @@
 <!-- TAB BAR -->
 <div class="tab-bar">
   <div class="tab active" onclick="switchTab('coupon')">優惠券</div>
-  <div class="tab" onclick="switchTab('history')">消費紀錄</div>
+  <div class="tab" onclick="switchTab('activity')">活動</div>
   <div class="tab" onclick="switchTab('profile')">個人設定</div>
 </div>
 
@@ -503,14 +592,13 @@
 
 </div>
 
-<!-- TAB: 消費紀錄（策略調整：消費集點回歸 POS，此頁改為 Coming Soon） -->
-<div class="tab-content" id="tab-history">
-  <div class="coming-soon-wrap">
-    <div class="coming-soon-card">
-      <span class="coming-soon-badge">COMING SOON</span>
-      <div class="coming-soon-icon">🧾</div>
-      <div class="coming-soon-title">消費紀錄功能開發中</div>
-      <div class="coming-soon-sub">敬請期待<br>目前消費明細請洽門市服務人員</div>
+<!-- TAB: 活動（集章活動） -->
+<div class="tab-content" id="tab-activity">
+  <div class="activity-section" id="stampList">
+    <div class="empty-card">
+      <div class="empty-icon">🎯</div>
+      <div class="empty-text">目前沒有進行中的活動</div>
+      <div class="empty-sub">請留意門市公告與 LINE 通知</div>
     </div>
   </div>
 </div>
@@ -518,14 +606,6 @@
 <!-- TAB: 個人設定 -->
 <div class="tab-content" id="tab-profile">
   <div class="profile-section">
-
-    <div class="profile-card">
-      <div class="profile-card-header">
-        <span>點數兌換</span>
-        <span class="coming-soon-badge">COMING SOON</span>
-      </div>
-      <div class="profile-row-comingsoon">點數兌換功能開發中，敬請期待</div>
-    </div>
 
     <div class="profile-card">
       <div class="profile-card-header">基本資料</div>
@@ -536,6 +616,14 @@
       <div class="profile-row">
         <span class="profile-row-label">手機號碼</span>
         <span class="profile-row-value" id="profilePhone">—</span>
+      </div>
+      <div class="birthday-row">
+        <span class="profile-row-label">生日</span>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <input type="text" id="profileBirthday" class="birthday-input" placeholder="MM-DD" maxlength="5">
+          <button class="birthday-save" id="birthdaySaveBtn" onclick="saveBirthday()">儲存</button>
+          <span class="birthday-saved" id="birthdaySaved">已儲存</span>
+        </div>
       </div>
       <div class="profile-row">
         <span class="profile-row-label">加入日期</span>
@@ -592,6 +680,7 @@ const COUPON_COLORS = ['brown', 'green', 'red', 'blue'];
 let lineProfile = null;
 let currentMember = null;
 let currentCoupons = [];
+let currentCampaigns = [];
 
 /* ---------- 啟動流程 ---------- */
 
@@ -621,6 +710,7 @@ async function loadMember() {
     const data = await res.json();
     currentMember = data.member;
     currentCoupons = data.coupons || [];
+    await loadStampCampaigns();
     renderApp();
   } catch (err) {
     console.error(err);
@@ -690,7 +780,19 @@ function renderApp() {
   document.getElementById('profilePhone').textContent = currentMember.phone || '未填寫';
   document.getElementById('profileJoinDate').textContent = formatDate(currentMember.created_at);
 
+  const birthdayInput = document.getElementById('profileBirthday');
+  const birthdayBtn = document.getElementById('birthdaySaveBtn');
+  const birthdaySaved = document.getElementById('birthdaySaved');
+  if (currentMember.birthday) {
+    birthdayInput.value = currentMember.birthday;
+    birthdayInput.readOnly = true;
+    birthdayInput.style.borderColor = '#4CAF50';
+    birthdayBtn.style.display = 'none';
+    birthdaySaved.style.display = 'inline';
+  }
+
   renderCoupons();
+  renderStamps();
 }
 
 function escapeHtml(str) {
@@ -833,7 +935,7 @@ function couponCardHTML(c, idx, state) {
 
 function switchTab(name) {
   document.querySelectorAll('.tab').forEach((t,i) => {
-    const names = ['coupon','history','profile'];
+    const names = ['coupon','activity','profile'];
     t.classList.toggle('active', names[i] === name);
   });
   document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
@@ -863,6 +965,117 @@ function closeModal(e) {
 }
 function closeModalDirect() {
   document.getElementById('modal').classList.remove('open');
+}
+
+/* ---------- 集章活動 ---------- */
+
+async function loadStampCampaigns() {
+  try {
+    const res = await fetch(`${API}/api/stamp/active?line_id=${encodeURIComponent(lineProfile.userId)}`);
+    if (res.ok) {
+      const data = await res.json();
+      currentCampaigns = data.campaigns || [];
+    }
+  } catch (e) {
+    console.error('載入集章活動失敗', e);
+    currentCampaigns = [];
+  }
+}
+
+function renderStamps() {
+  const container = document.getElementById('stampList');
+  if (currentCampaigns.length === 0) {
+    container.innerHTML = `
+      <div class="empty-card">
+        <div class="empty-icon">🎯</div>
+        <div class="empty-text">目前沒有進行中的活動</div>
+        <div class="empty-sub">請留意門市公告與 LINE 通知</div>
+      </div>`;
+    return;
+  }
+
+  container.innerHTML = currentCampaigns.map(c => {
+    const myStamps = c.my_stamps || 0;
+    const goal = c.stamp_goal;
+    const completed = myStamps >= goal;
+    const icon = escapeHtml(c.icon || '🍲');
+    const color = c.color || '#FF8200';
+
+    let dotsHTML = '';
+    for (let i = 1; i <= goal; i++) {
+      const isLast = i === goal;
+      const isFilled = i <= myStamps;
+      const cls = isLast ? 'stamp-dot reward-dot' : 'stamp-dot';
+      const filledCls = isFilled ? ' filled' : '';
+      const inner = isFilled ? '✓' : (isLast ? '🎁' : i);
+      dotsHTML += `<div class="${cls}${filledCls}">${inner}</div>`;
+    }
+
+    const dateRange = `${c.start_date} ~ ${c.end_date}`;
+
+    return `
+    <div class="stamp-card">
+      <div class="stamp-card-header">
+        <div class="stamp-card-icon" style="background:${color}20;color:${color};">${icon}</div>
+        <div class="stamp-card-info">
+          <div class="stamp-card-title">${escapeHtml(c.title)}</div>
+          <div class="stamp-card-desc">${escapeHtml(c.description || '')}</div>
+          <div class="stamp-card-date">${dateRange}</div>
+        </div>
+      </div>
+      <div class="stamp-progress">
+        <div class="stamp-dots">${dotsHTML}</div>
+        <div class="stamp-bar">
+          <div class="stamp-bar-text">進度 <strong>${myStamps}/${goal}</strong></div>
+          ${completed
+            ? '<span class="stamp-completed-badge">已集滿</span>'
+            : `<div class="stamp-reward-info">集滿獎勵：${escapeHtml(c.reward_title || '')}</div>`}
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+/* ---------- 生日儲存 ---------- */
+
+async function saveBirthday() {
+  const input = document.getElementById('profileBirthday');
+  const btn = document.getElementById('birthdaySaveBtn');
+  const saved = document.getElementById('birthdaySaved');
+  const val = input.value.trim();
+
+  if (!/^\d{2}-\d{2}$/.test(val)) {
+    alert('請輸入正確格式 MM-DD（例：08-15）');
+    return;
+  }
+  const mm = parseInt(val.split('-')[0]);
+  const dd = parseInt(val.split('-')[1]);
+  if (mm < 1 || mm > 12 || dd < 1 || dd > 31) {
+    alert('請輸入有效的月日');
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = '儲存中…';
+  try {
+    const res = await fetch(`${API}/api/member/update`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ line_id: lineProfile.userId, birthday: val })
+    });
+    if (!res.ok) throw new Error('儲存失敗');
+    const data = await res.json();
+    currentMember = data;
+    btn.style.display = 'none';
+    saved.style.display = 'inline';
+    input.readOnly = true;
+    input.style.borderColor = '#4CAF50';
+  } catch (e) {
+    alert('儲存失敗，請稍後再試');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '儲存';
+  }
 }
 
 /* ---------- 啟動 ---------- */
