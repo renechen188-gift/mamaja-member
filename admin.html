@@ -12,22 +12,26 @@
   .header .logout { background: rgba(255,255,255,0.2); border: none; color: white; padding: 8px 15px; border-radius: 8px; cursor: pointer; font-size: 14px; }
   .stats-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; padding: 20px; }
   .stat-card { background: white; border-radius: 12px; padding: 20px; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
-  .stat-card .num { font-size: 32px; font-weight: bold; color: #FF8200; }
+  .stat-card .num { font-size: 28px; font-weight: bold; color: #FF8200; }
   .stat-card .label { font-size: 12px; color: #999; margin-top: 5px; }
   .section { padding: 0 20px 20px; }
   .card { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin-bottom: 15px; }
-  input, select { width: 100%; padding: 11px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; margin-bottom: 10px; }
+  .card h2 { font-size: 15px; margin-bottom: 12px; }
+  input, select, textarea { width: 100%; padding: 11px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; margin-bottom: 10px; font-family: inherit; }
+  textarea { resize: vertical; min-height: 60px; }
   .btn { padding: 12px 20px; border: none; border-radius: 8px; font-size: 14px; cursor: pointer; color: white; width: 100%; margin-bottom: 8px; }
   .btn-primary { background: #FF8200; }
   .btn-success { background: #27ae60; }
+  .btn-danger { background: #e74c3c; }
+  .btn-sm { padding: 6px 12px; font-size: 12px; width: auto; margin: 0; }
+  .btn:disabled { opacity: 0.5; }
   .tab { display: flex; background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin: 0 20px 20px; flex-wrap: wrap; }
-  .tab-btn { flex: 1; min-width: 60px; padding: 12px 5px; border: none; background: white; cursor: pointer; font-size: 12px; text-align: center; }
+  .tab-btn { flex: 1; min-width: 55px; padding: 12px 3px; border: none; background: white; cursor: pointer; font-size: 11px; text-align: center; }
   .tab-btn.active { background: #FF8200; color: white; }
   .member-row { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #f0f0f0; }
   .member-row:last-child { border-bottom: none; }
   .member-row .info .name { font-size: 15px; font-weight: bold; }
   .member-row .info .detail { font-size: 12px; color: #999; margin-top: 3px; }
-  .member-row .pts { font-size: 20px; font-weight: bold; color: #FF8200; }
   .store-row { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #f0f0f0; }
   .store-row:last-child { border-bottom: none; }
   .login-wrap { max-width: 400px; margin: 80px auto; padding: 0 20px; }
@@ -37,14 +41,20 @@
   .result { padding: 15px; border-radius: 8px; margin-top: 10px; text-align: center; font-weight: bold; display: none; }
   .result.success { background: #d4edda; color: #155724; }
   .result.error { background: #f8d7da; color: #721c24; }
-  .coupon-row { padding: 12px 0; border-bottom: 1px solid #f0f0f0; }
-  .coupon-row:last-child { border-bottom: none; }
-  .coupon-row .coupon-title { font-size: 14px; font-weight: bold; }
-  .coupon-row .coupon-detail { font-size: 12px; color: #999; margin-top: 3px; }
   .badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; }
   .badge-active { background: #e8f5e9; color: #27ae60; }
   .badge-used { background: #f5f5f5; color: #999; }
   .badge-expired { background: #fce4ec; color: #e74c3c; }
+  .tag-chip { display: inline-block; padding: 3px 10px; border-radius: 12px; font-size: 12px; margin: 2px 4px 2px 0; color: white; }
+  .tag-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #f0f0f0; }
+  .tag-row:last-child { border-bottom: none; }
+  .campaign-card { background: #fff8f2; border-radius: 10px; padding: 15px; margin-bottom: 12px; border: 1px solid #ede5dc; }
+  .campaign-card .c-title { font-size: 15px; font-weight: bold; }
+  .campaign-card .c-info { font-size: 12px; color: #999; margin-top: 4px; }
+  .campaign-card .c-stats { display: flex; gap: 15px; margin-top: 8px; font-size: 13px; }
+  .campaign-card .c-stats span { color: #FF8200; font-weight: bold; }
+  .form-row { display: flex; gap: 10px; }
+  .form-row > * { flex: 1; }
 </style>
 </head>
 <body>
@@ -54,11 +64,12 @@
 <script>
 const API = 'https://mamaja-member-api.renechen188.workers.dev';
 let currentTab = 'overview';
+let allTags = [];
 
 function showLogin() {
   document.getElementById('app').innerHTML = `
     <div style="background:linear-gradient(135deg,#cc6600,#FF8200);padding:40px 20px;text-align:center;color:white;">
-      <h1 style="font-size:22px;">🍲 麻媽家</h1>
+      <h1 style="font-size:22px;">麻媽家</h1>
       <p style="opacity:0.8;margin-top:5px;">LINE 會員管理後台</p>
     </div>
     <div class="login-wrap">
@@ -92,15 +103,16 @@ async function login() {
 async function showAdmin() {
   document.getElementById('app').innerHTML = `
     <div class="header">
-      <h1>🍲 麻媽家 LINE 會員管理後台</h1>
+      <h1>麻媽家 管理後台</h1>
       <button class="logout" onclick="showLogin()">登出</button>
     </div>
     <div class="tab" style="margin-top:20px;">
       <button class="tab-btn active" onclick="switchTab('overview')" id="tab-overview">📊 總覽</button>
       <button class="tab-btn" onclick="switchTab('members')" id="tab-members">👥 會員</button>
+      <button class="tab-btn" onclick="switchTab('tags')" id="tab-tags">🏷️ 標籤</button>
       <button class="tab-btn" onclick="switchTab('send')" id="tab-send">🎫 發券</button>
+      <button class="tab-btn" onclick="switchTab('stamps')" id="tab-stamps">🎯 集章</button>
       <button class="tab-btn" onclick="switchTab('coupons')" id="tab-coupons">📋 券紀錄</button>
-      <button class="tab-btn" onclick="switchTab('search')" id="tab-search">🔍 查詢</button>
       <button class="tab-btn" onclick="switchTab('export')" id="tab-export">📤 匯出</button>
     </div>
     <div id="tab-content"></div>
@@ -110,16 +122,19 @@ async function showAdmin() {
 
 async function switchTab(tab) {
   currentTab = tab;
-  ['overview','members','send','coupons','search','export'].forEach(t => {
+  ['overview','members','tags','send','stamps','coupons','export'].forEach(t => {
     document.getElementById(`tab-${t}`).className = 'tab-btn' + (t === tab ? ' active' : '');
   });
   if (tab === 'overview') await loadOverview();
   if (tab === 'members') await loadMembers();
-  if (tab === 'send') showSendCoupon();
+  if (tab === 'tags') await loadTags();
+  if (tab === 'send') await showSendCoupon();
+  if (tab === 'stamps') await loadStampCampaigns();
   if (tab === 'coupons') await loadCoupons();
-  if (tab === 'search') showSearch();
   if (tab === 'export') showExport();
 }
+
+// ── 總覽 ──
 
 async function loadOverview() {
   document.getElementById('tab-content').innerHTML = '<div class="loading">載入中...</div>';
@@ -134,19 +149,31 @@ async function loadOverview() {
     </div>
   `).join('');
 
+  const tagHTML = (data.tagStats || []).map(t => `
+    <div class="store-row">
+      <div>${t.tag}</div>
+      <div style="font-weight:bold;color:#FF8200">${t.count} 人</div>
+    </div>
+  `).join('');
+
   document.getElementById('tab-content').innerHTML = `
     <div class="stats-grid">
       <div class="stat-card"><div class="num">${data.totalMembers}</div><div class="label">總會員數</div></div>
-      <div class="stat-card"><div class="num">${data.totalPoints}</div><div class="label">總累積點數</div></div>
+      <div class="stat-card"><div class="num">${data.birthdayFilled || 0}</div><div class="label">已填生日</div></div>
       <div class="stat-card"><div class="num">${data.activeCoupons}</div><div class="label">待使用優惠券</div></div>
-      <div class="stat-card"><div class="num">NT$${data.usedCouponsAmount}</div><div class="label">已核銷折抵金額</div></div>
+      <div class="stat-card"><div class="num">${data.usedCoupons}</div><div class="label">已核銷券數</div></div>
     </div>
     <div class="section">
-      <h2 style="margin-bottom:12px;font-size:15px;font-weight:bold;">各門店會員數</h2>
-      <div class="card">${storeHTML || '<p style="color:#999">尚無資料</p>'}</div>
+      <div class="card">
+        <h2>各門店會員數</h2>
+        ${storeHTML || '<p style="color:#999">尚無資料</p>'}
+      </div>
+      ${tagHTML ? `<div class="card"><h2>標籤統計</h2>${tagHTML}</div>` : ''}
     </div>
   `;
 }
+
+// ── 會員列表 ──
 
 async function loadMembers() {
   document.getElementById('tab-content').innerHTML = '<div class="loading">載入中...</div>';
@@ -154,42 +181,153 @@ async function loadMembers() {
   const data = await res.json();
   const members = data.members || [];
 
-  const memberHTML = members.map(m => `
+  const memberHTML = members.map(m => {
+    const tags = (m.tags || []).map(t => `<span class="tag-chip" style="background:#FF8200">${t}</span>`).join('');
+    return `
     <div class="member-row">
       <div class="info">
         <div class="name">${m.name || '未命名'}</div>
-        <div class="detail">${m.phone || '未填手機'} ｜ ${new Date(m.created_at).toLocaleDateString('zh-TW')} 加入</div>
+        <div class="detail">${m.phone || ''} ｜ 生日 ${m.birthday || '未填'} ｜ ${new Date(m.created_at).toLocaleDateString('zh-TW')}</div>
+        <div style="margin-top:4px;">${tags}</div>
       </div>
-      <div class="pts">${m.points}點</div>
-    </div>
-  `).join('');
+    </div>`;
+  }).join('');
 
   document.getElementById('tab-content').innerHTML = `
     <div class="section" style="padding-top:20px;">
       <div class="card">
-        <h2 style="margin-bottom:15px;">所有會員（${members.length} 人）</h2>
+        <h2>所有會員（${members.length} 人）</h2>
         ${memberHTML || '<p style="color:#999;text-align:center;padding:20px;">尚無會員</p>'}
       </div>
     </div>
   `;
 }
 
-function showSendCoupon() {
+// ── 標籤管理 ──
+
+async function loadTags() {
+  document.getElementById('tab-content').innerHTML = '<div class="loading">載入中...</div>';
+  const res = await fetch(`${API}/api/admin/tags`);
+  const data = await res.json();
+  allTags = data.tags || [];
+
+  const tagListHTML = allTags.map(t => `
+    <div class="tag-row">
+      <div>
+        <span class="tag-chip" style="background:${t.color}">${t.name}</span>
+        <span style="font-size:12px;color:#999;margin-left:4px">${t.type === 'auto' ? '自動' : '手動'} ｜ ${t.member_count} 人</span>
+      </div>
+      ${t.type === 'manual' ? `<button class="btn btn-danger btn-sm" onclick="deleteTag('${t.name}')">刪除</button>` : ''}
+    </div>
+  `).join('');
+
   document.getElementById('tab-content').innerHTML = `
     <div class="section" style="padding-top:20px;">
       <div class="card">
-        <h2 style="margin-bottom:15px;">🎫 發送優惠券</h2>
+        <h2>新增標籤</h2>
+        <div class="form-row">
+          <input type="text" id="tag-name" placeholder="標籤名稱" style="flex:2">
+          <input type="color" id="tag-color" value="#FF8200" style="flex:0.5;padding:5px;height:43px;">
+        </div>
+        <button class="btn btn-primary" onclick="addTag()">新增標籤</button>
+      </div>
+      <div class="card">
+        <h2>自動標籤</h2>
+        <p style="font-size:13px;color:#999;margin-bottom:12px">自動判斷：新會員（30天內）、壽星月（當月生日）、沉睡客（60天未用券）</p>
+        <button class="btn btn-success" onclick="runAutoTag()">執行自動標籤</button>
+        <div class="result" id="auto-tag-result"></div>
+      </div>
+      <div class="card">
+        <h2>現有標籤</h2>
+        ${tagListHTML || '<p style="color:#999">尚無標籤</p>'}
+      </div>
+    </div>
+  `;
+}
+
+async function addTag() {
+  const name = document.getElementById('tag-name').value.trim();
+  const color = document.getElementById('tag-color').value;
+  if (!name) return alert('請輸入標籤名稱');
+
+  await fetch(`${API}/api/admin/tags`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name, color })
+  });
+  await loadTags();
+}
+
+async function deleteTag(name) {
+  if (!confirm(`確定刪除標籤「${name}」？已貼此標籤的會員會自動移除`)) return;
+  await fetch(`${API}/api/admin/tags`, {
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name })
+  });
+  await loadTags();
+}
+
+async function runAutoTag() {
+  const btn = event.target;
+  btn.disabled = true;
+  btn.textContent = '執行中...';
+
+  const res = await fetch(`${API}/api/admin/auto-tag`, { method: 'POST' });
+  const data = await res.json();
+  const el = document.getElementById('auto-tag-result');
+  el.style.display = 'block';
+
+  if (data.success) {
+    const details = (data.auto_tags || []).map(t => `${t.tag}: ${t.count} 人`).join('、');
+    el.className = 'result success';
+    el.innerHTML = `✅ 自動標籤完成！${details || '無符合條件的會員'}`;
+  } else {
+    el.className = 'result error';
+    el.innerHTML = '執行失敗';
+  }
+
+  btn.disabled = false;
+  btn.textContent = '執行自動標籤';
+}
+
+// ── 發券（支援標籤篩選）──
+
+async function showSendCoupon() {
+  const tagsRes = await fetch(`${API}/api/admin/tags`);
+  const tagsData = await tagsRes.json();
+  allTags = tagsData.tags || [];
+
+  const tagOptions = allTags.map(t => `<option value="tag:${t.name}">🏷️ ${t.name}（${t.member_count} 人）</option>`).join('');
+  const monthOptions = Array.from({length: 12}, (_, i) => {
+    const m = i + 1;
+    return `<option value="birthday:${m}">🎂 ${m} 月壽星</option>`;
+  }).join('');
+
+  document.getElementById('tab-content').innerHTML = `
+    <div class="section" style="padding-top:20px;">
+      <div class="card">
+        <h2>🎫 發送優惠券</h2>
+        <label style="font-size:13px;color:#666;display:block;margin-bottom:5px;">券類型</label>
+        <select id="c-type">
+          <option value="gift">🎁 贈品券（免費兌換品項）</option>
+          <option value="discount">💰 折抵券（折抵金額）</option>
+        </select>
         <label style="font-size:13px;color:#666;display:block;margin-bottom:5px;">券名稱</label>
-        <input type="text" id="c-title" placeholder="例：母親節感謝券">
+        <input type="text" id="c-title" placeholder="例：秋季限定贈品券">
         <label style="font-size:13px;color:#666;display:block;margin-bottom:5px;">說明</label>
-        <input type="text" id="c-desc" placeholder="例：母親節專屬折扣，限堂食使用">
-        <label style="font-size:13px;color:#666;display:block;margin-bottom:5px;">折抵金額（元）</label>
-        <input type="number" id="c-discount" placeholder="例：50">
+        <input type="text" id="c-desc" placeholder="例：消費滿 $150 送招牌小菜一份">
+        <label style="font-size:13px;color:#666;display:block;margin-bottom:5px;">折抵金額（贈品券填 0）</label>
+        <input type="number" id="c-discount" placeholder="0" value="0">
+        <label style="font-size:13px;color:#666;display:block;margin-bottom:5px;">有效天數</label>
+        <input type="number" id="c-days" placeholder="90" value="90">
         <label style="font-size:13px;color:#666;display:block;margin-bottom:5px;">發送對象</label>
         <select id="c-target">
-          <option value="all">全部會員</option>
+          <option value="all">📢 全部會員</option>
+          ${tagOptions}
+          ${monthOptions}
         </select>
-        <button class="btn btn-primary" onclick="sendCoupon()">🚀 發送優惠券</button>
+        <button class="btn btn-primary" onclick="sendCoupon()">發送優惠券</button>
         <div class="result" id="send-result"></div>
       </div>
     </div>
@@ -197,19 +335,36 @@ function showSendCoupon() {
 }
 
 async function sendCoupon() {
+  const type = document.getElementById('c-type').value;
   const title = document.getElementById('c-title').value;
   const desc = document.getElementById('c-desc').value;
-  const discount = parseInt(document.getElementById('c-discount').value);
-  const target = document.getElementById('c-target').value;
+  const discount = parseInt(document.getElementById('c-discount').value) || 0;
+  const days = parseInt(document.getElementById('c-days').value) || 90;
+  const targetVal = document.getElementById('c-target').value;
 
   if (!title) { alert('請輸入券名稱'); return; }
-  if (!discount || discount <= 0) { alert('請輸入折抵金額'); return; }
-  if (!confirm(`確定發送「${title}」給${target === 'all' ? '全部' : '指定'}會員？`)) return;
+
+  let target;
+  let targetLabel;
+  if (targetVal === 'all') {
+    target = 'all';
+    targetLabel = '全部會員';
+  } else if (targetVal.startsWith('tag:')) {
+    const tagName = targetVal.substring(4);
+    target = { tag: tagName };
+    targetLabel = `標籤「${tagName}」`;
+  } else if (targetVal.startsWith('birthday:')) {
+    const month = parseInt(targetVal.substring(9));
+    target = { birthday_month: month };
+    targetLabel = `${month} 月壽星`;
+  }
+
+  if (!confirm(`確定發送「${title}」給 ${targetLabel}？`)) return;
 
   const res = await fetch(`${API}/api/admin/send-coupon`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ type: 'custom', title, description: desc, discount, target })
+    body: JSON.stringify({ type, title, description: desc, discount, target, expires_days: days })
   });
   const data = await res.json();
   const el = document.getElementById('send-result');
@@ -223,99 +378,169 @@ async function sendCoupon() {
   }
 }
 
+// ── 集章活動管理 ──
+
+async function loadStampCampaigns() {
+  document.getElementById('tab-content').innerHTML = '<div class="loading">載入中...</div>';
+  const res = await fetch(`${API}/api/admin/stamp-campaigns`);
+  const data = await res.json();
+  const campaigns = data.campaigns || [];
+
+  const campaignHTML = campaigns.map(c => `
+    <div class="campaign-card">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+        <div>
+          <div class="c-title">${c.icon || '🍲'} ${c.title}</div>
+          <div class="c-info">${c.description || ''}</div>
+          <div class="c-info">${c.start_date} ~ ${c.end_date}</div>
+        </div>
+        <span class="badge ${c.status === 'active' ? 'badge-active' : 'badge-used'}">${c.status === 'active' ? '進行中' : '已結束'}</span>
+      </div>
+      <div class="c-stats">
+        <div>目標 <span>${c.stamp_goal} 章</span></div>
+        <div>參與 <span>${c.participants} 人</span></div>
+        <div>完成 <span>${c.completed_count} 人</span></div>
+      </div>
+      <div class="c-info">獎勵：${c.reward_title || '—'}</div>
+      ${c.status === 'active' ? `<button class="btn btn-danger btn-sm" style="margin-top:10px;" onclick="endCampaign(${c.id},'${c.title}')">結束活動</button>` : ''}
+    </div>
+  `).join('');
+
+  document.getElementById('tab-content').innerHTML = `
+    <div class="section" style="padding-top:20px;">
+      <div class="card">
+        <h2>建立新活動</h2>
+        <input type="text" id="sc-title" placeholder="活動名稱">
+        <input type="text" id="sc-desc" placeholder="活動說明">
+        <div class="form-row">
+          <input type="number" id="sc-goal" placeholder="集章目標" min="1" value="5">
+          <input type="text" id="sc-icon" placeholder="圖示" value="🍲" style="flex:0.5">
+        </div>
+        <input type="text" id="sc-reward" placeholder="獎勵名稱（例：招牌小菜一份）">
+        <input type="text" id="sc-reward-desc" placeholder="獎勵說明">
+        <div class="form-row">
+          <div>
+            <label style="font-size:12px;color:#999">開始日期</label>
+            <input type="date" id="sc-start">
+          </div>
+          <div>
+            <label style="font-size:12px;color:#999">結束日期</label>
+            <input type="date" id="sc-end">
+          </div>
+        </div>
+        <div class="form-row">
+          <div>
+            <label style="font-size:12px;color:#999">獎勵券有效天數</label>
+            <input type="number" id="sc-reward-days" value="30">
+          </div>
+          <div>
+            <label style="font-size:12px;color:#999">活動主色</label>
+            <input type="color" id="sc-color" value="#FF8200" style="padding:5px;height:43px;">
+          </div>
+        </div>
+        <button class="btn btn-primary" onclick="createCampaign()">建立活動</button>
+        <div class="result" id="campaign-result"></div>
+      </div>
+      <div class="card">
+        <h2>所有活動</h2>
+        ${campaignHTML || '<p style="color:#999;text-align:center;padding:10px;">尚無活動</p>'}
+      </div>
+    </div>
+  `;
+}
+
+async function createCampaign() {
+  const title = document.getElementById('sc-title').value;
+  const description = document.getElementById('sc-desc').value;
+  const stamp_goal = parseInt(document.getElementById('sc-goal').value);
+  const icon = document.getElementById('sc-icon').value;
+  const reward_title = document.getElementById('sc-reward').value;
+  const reward_description = document.getElementById('sc-reward-desc').value;
+  const start_date = document.getElementById('sc-start').value;
+  const end_date = document.getElementById('sc-end').value;
+  const reward_expires_days = parseInt(document.getElementById('sc-reward-days').value) || 30;
+  const color = document.getElementById('sc-color').value;
+
+  if (!title || !stamp_goal || !start_date || !end_date) {
+    alert('請填寫活動名稱、集章目標、開始/結束日期');
+    return;
+  }
+
+  const res = await fetch(`${API}/api/admin/stamp-campaign`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      title, description, stamp_goal, reward_title, reward_description,
+      reward_discount: 0, reward_expires_days, start_date, end_date, icon, color
+    })
+  });
+  const data = await res.json();
+  const el = document.getElementById('campaign-result');
+  el.style.display = 'block';
+
+  if (data.success) {
+    el.className = 'result success';
+    el.innerHTML = '✅ 活動建立成功！';
+    setTimeout(() => loadStampCampaigns(), 1000);
+  } else {
+    el.className = 'result error';
+    el.innerHTML = `❌ 建立失敗：${data.error}`;
+  }
+}
+
+async function endCampaign(id, title) {
+  if (!confirm(`確定結束活動「${title}」？結束後無法恢復`)) return;
+
+  await fetch(`${API}/api/admin/stamp-campaign/end`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ campaign_id: id })
+  });
+  await loadStampCampaigns();
+}
+
+// ── 券紀錄 ──
+
 async function loadCoupons() {
   document.getElementById('tab-content').innerHTML = '<div class="loading">載入中...</div>';
   const res = await fetch(`${API}/api/admin/coupons`);
   const data = await res.json();
   const coupons = data.coupons || [];
 
-  const couponHTML = coupons.map(c => `
-    <div class="coupon-row">
+  const couponHTML = coupons.map(c => {
+    const isGift = c.type === 'gift' || c.discount === 0;
+    const amountText = isGift ? '🎁 贈品' : `NT$${c.discount}`;
+    return `
+    <div style="padding:12px 0;border-bottom:1px solid #f0f0f0;">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;">
         <div>
-          <div class="coupon-title">${c.title} <span style="color:#FF8200">NT$${c.discount}</span></div>
-          <div class="coupon-detail">${c.name || '未命名'} ｜ ${c.phone || ''} ｜ 碼：${c.code}</div>
-          <div class="coupon-detail">效期：${new Date(c.expires_at).toLocaleDateString('zh-TW')}</div>
-          ${c.status === 'used' ? `<div class="coupon-detail">核銷：${new Date(c.used_at).toLocaleDateString('zh-TW')} ｜ ${c.used_store||''} ｜ ${c.used_by||''}</div>` : ''}
+          <div style="font-size:14px;font-weight:bold;">${c.title} <span style="color:#FF8200">${amountText}</span></div>
+          <div style="font-size:12px;color:#999;margin-top:3px;">${c.name || '未命名'} ｜ ${c.phone || ''} ｜ 碼：${c.code}</div>
+          <div style="font-size:12px;color:#999;">效期：${new Date(c.expires_at).toLocaleDateString('zh-TW')}</div>
+          ${c.status === 'used' ? `<div style="font-size:12px;color:#999;">核銷：${new Date(c.used_at).toLocaleDateString('zh-TW')} ｜ ${c.used_store || ''} ｜ ${c.used_by || ''}</div>` : ''}
         </div>
         <span class="badge badge-${c.status}">${c.status === 'active' ? '未使用' : c.status === 'used' ? '已使用' : '已過期'}</span>
       </div>
-    </div>
-  `).join('');
+    </div>`;
+  }).join('');
 
   document.getElementById('tab-content').innerHTML = `
     <div class="section" style="padding-top:20px;">
       <div class="card">
-        <h2 style="margin-bottom:15px;">優惠券紀錄（最近 100 筆）</h2>
+        <h2>優惠券紀錄（最近 100 筆）</h2>
         ${couponHTML || '<p style="color:#999;text-align:center;padding:20px;">尚無紀錄</p>'}
       </div>
     </div>
   `;
 }
 
-function showSearch() {
-  document.getElementById('tab-content').innerHTML = `
-    <div class="section" style="padding-top:20px;">
-      <div class="card">
-        <h2 style="margin-bottom:15px;">查詢會員</h2>
-        <input type="tel" id="search-phone" placeholder="輸入手機號碼">
-        <button class="btn btn-primary" onclick="searchMember()">查詢</button>
-      </div>
-      <div id="search-result"></div>
-    </div>
-  `;
-}
-
-async function searchMember() {
-  const phone = document.getElementById('search-phone').value;
-  if (!phone) return;
-  const res = await fetch(`${API}/api/member/by-phone?phone=${phone}`);
-  const data = await res.json();
-  
-  if (data.error) {
-    document.getElementById('search-result').innerHTML = `<div class="card" style="text-align:center;color:#e74c3c">找不到此會員</div>`;
-    return;
-  }
-
-  const txHTML = data.transactions.map(t => `
-    <div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid #f0f0f0;">
-      <div>
-        <div style="font-size:12px;color:#999">${new Date(t.created_at).toLocaleDateString('zh-TW')} ｜ ${t.store||''}</div>
-        <div style="font-size:14px">${t.type==='add'?`消費 NT$${t.amount}`:`兌換：${t.note||''}`}</div>
-      </div>
-      <div style="font-weight:bold;color:${t.type==='add'?'#27ae60':'#e74c3c'}">${t.type==='add'?'+':''}${t.points}點</div>
-    </div>
-  `).join('');
-
-  const couponHTML = (data.coupons || []).map(c => `
-    <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f0f0f0;">
-      <div style="font-size:13px;">${c.title} ｜ NT$${c.discount} ｜ 碼：${c.code}</div>
-      <span class="badge badge-${c.status}">${c.status==='active'?'未使用':c.status==='used'?'已使用':'已過期'}</span>
-    </div>
-  `).join('');
-
-  document.getElementById('search-result').innerHTML = `
-    <div class="card">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:15px;">
-        <div>
-          <div style="font-size:18px;font-weight:bold">${data.member.name||'未命名'}</div>
-          <div style="font-size:13px;color:#999">${data.member.phone||''}</div>
-        </div>
-        <div style="font-size:28px;font-weight:bold;color:#FF8200">${data.member.points}點</div>
-      </div>
-      <h2 style="font-size:14px;margin-bottom:10px;">優惠券</h2>
-      ${couponHTML || '<p style="color:#999;font-size:13px;">無優惠券</p>'}
-      <h2 style="font-size:14px;margin:15px 0 10px;">消費紀錄</h2>
-      ${txHTML || '<p style="color:#999;font-size:13px;">尚無紀錄</p>'}
-    </div>
-  `;
-}
+// ── 匯出 ──
 
 function showExport() {
   document.getElementById('tab-content').innerHTML = `
     <div class="section" style="padding-top:20px;">
       <div class="card">
-        <h2 style="margin-bottom:15px;">匯出資料</h2>
+        <h2>匯出資料</h2>
         <button class="btn btn-success" onclick="exportMembers()">📥 匯出會員名單 CSV</button>
         <button class="btn btn-primary" onclick="exportCoupons()">📥 匯出優惠券紀錄 CSV</button>
       </div>
@@ -328,8 +553,12 @@ async function exportMembers() {
   const data = await res.json();
   const members = data.members || [];
   const csv = [
-    ['姓名','手機','點數','加入日期'].join(','),
-    ...members.map(m => [m.name||'',m.phone||'',m.points,new Date(m.created_at).toLocaleDateString('zh-TW')].join(','))
+    ['姓名','手機','生日','標籤','加入日期'].join(','),
+    ...members.map(m => [
+      m.name || '', m.phone || '', m.birthday || '',
+      (m.tags || []).join('/'),
+      new Date(m.created_at).toLocaleDateString('zh-TW')
+    ].join(','))
   ].join('\n');
   downloadCSV(csv, `麻媽家會員_${today()}.csv`);
 }
@@ -339,20 +568,20 @@ async function exportCoupons() {
   const data = await res.json();
   const coupons = data.coupons || [];
   const csv = [
-    ['會員','手機','券名稱','折抵金額','核銷碼','狀態','到期日','核銷時間','核銷門店'].join(','),
+    ['會員','手機','券名稱','類型','折抵金額','核銷碼','狀態','到期日','核銷時間','核銷門店'].join(','),
     ...coupons.map(c => [
-      c.name||'',c.phone||'',c.title,c.discount,c.code,
-      c.status==='active'?'未使用':c.status==='used'?'已使用':'已過期',
+      c.name || '', c.phone || '', c.title, c.type || '', c.discount, c.code,
+      c.status === 'active' ? '未使用' : c.status === 'used' ? '已使用' : '已過期',
       new Date(c.expires_at).toLocaleDateString('zh-TW'),
-      c.used_at?new Date(c.used_at).toLocaleDateString('zh-TW'):'',
-      c.used_store||''
+      c.used_at ? new Date(c.used_at).toLocaleDateString('zh-TW') : '',
+      c.used_store || ''
     ].join(','))
   ].join('\n');
   downloadCSV(csv, `麻媽家優惠券_${today()}.csv`);
 }
 
 function downloadCSV(csv, filename) {
-  const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+  const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url; a.download = filename; a.click();
