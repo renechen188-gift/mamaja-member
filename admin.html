@@ -651,7 +651,7 @@ async function loadScratchCampaigns() {
       <div style="margin-top:8px;background:white;border-radius:8px;padding:8px 12px;">${prizesHTML}</div>
       ${c.status === 'active' ? `
         <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;">
-          <select id="scratch-give-target-${c.id}" style="flex:1;margin:0;font-size:12px;padding:8px;min-width:120px;">
+          <select id="scratch-give-target-${c.id}" style="flex:1;margin:0;font-size:12px;padding:8px;min-width:120px;" onchange="document.getElementById('scratch-give-phone-${c.id}').style.display = this.value === 'phone' ? 'block' : 'none';">
             <option value="all">📢 全部會員</option>
             <option value="phone">📱 指定手機</option>
             ${tagOptions}
@@ -660,11 +660,6 @@ async function loadScratchCampaigns() {
           <button class="btn btn-success btn-sm" onclick="giveScratchChance(${c.id})">發放機會</button>
           <button class="btn btn-danger btn-sm" onclick="endScratchCampaign(${c.id},'${c.title}')">結束</button>
         </div>
-        <script>
-          document.getElementById('scratch-give-target-${c.id}').addEventListener('change', function() {
-            document.getElementById('scratch-give-phone-${c.id}').style.display = this.value === 'phone' ? 'block' : 'none';
-          });
-        </` + `script>
       ` : ''}
     </div>`;
   }).join('');
