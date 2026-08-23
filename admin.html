@@ -175,20 +175,47 @@ async function loadOverview() {
 
 // ── 會員列表 ──
 
+let allMembers = [];
+
 async function loadMembers() {
   document.getElementById('tab-content').innerHTML = '<div class="loading">載入中...</div>';
-  const res = await fetch(`${API}/api/admin/members`);
-  const data = await res.json();
-  const members = data.members || [];
+  const [membersRes, tagsRes] = await Promise.all([
+    fetch(`${API}/api/admin/members`),
+    fetch(`${API}/api/admin/tags`)
+  ]);
+  const membersData = await membersRes.json();
+  const tagsData = await tagsRes.json();
+  allMembers = membersData.members || [];
+  allTags = tagsData.tags || [];
 
-  const memberHTML = members.map(m => {
-    const tags = (m.tags || []).map(t => `<span class="tag-chip" style="background:#FF8200">${t}</span>`).join('');
+  const memberHTML = allMembers.map(m => {
+    const memberTags = m.tags || [];
+    const tagsHTML = memberTags.map(t => {
+      const tagDef = allTags.find(at => at.name === t);
+      const color = tagDef ? tagDef.color : '#FF8200';
+      return `<span class="tag-chip" style="background:${color}">${t} <span style="cursor:pointer;margin-left:2px;" onclick="removeTag(${m.id},'${t}')">✕</span></span>`;
+    }).join('');
+
+    const availableTags = allTags.filter(t => !memberTags.includes(t.name));
+    const addOptions = availableTags.map(t => `<option value="${t.name}">${t.name}</option>`).join('');
+
     return `
-    <div class="member-row">
-      <div class="info">
-        <div class="name">${m.name || '未命名'}</div>
-        <div class="detail">${m.phone || ''} ｜ 生日 ${m.birthday || '未填'} ｜ ${new Date(m.created_at).toLocaleDateString('zh-TW')}</div>
-        <div style="margin-top:4px;">${tags}</div>
+    <div style="padding:12px 0;border-bottom:1px solid #f0f0f0;">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+        <div>
+          <div style="font-size:15px;font-weight:bold;">${m.name || '未命名'}</div>
+          <div style="font-size:12px;color:#999;margin-top:3px;">${m.phone || ''} ｜ 生日 ${m.birthday || '未填'} ｜ ${new Date(m.created_at).toLocaleDateString('zh-TW')}</div>
+        </div>
+      </div>
+      <div style="margin-top:6px;display:flex;align-items:center;flex-wrap:wrap;gap:4px;">
+        ${tagsHTML}
+        ${availableTags.length > 0 ? `
+          <select id="add-tag-${m.id}" style="width:auto;padding:4px 8px;font-size:11px;margin:0;border-radius:12px;">
+            <option value="">+標籤</option>
+            ${addOptions}
+          </select>
+          <button class="btn btn-primary btn-sm" onclick="addTagToMember(${m.id})">加</button>
+        ` : ''}
       </div>
     </div>`;
   }).join('');
@@ -196,11 +223,34 @@ async function loadMembers() {
   document.getElementById('tab-content').innerHTML = `
     <div class="section" style="padding-top:20px;">
       <div class="card">
-        <h2>所有會員（${members.length} 人）</h2>
+        <h2>所有會員（${allMembers.length} 人）</h2>
         ${memberHTML || '<p style="color:#999;text-align:center;padding:20px;">尚無會員</p>'}
       </div>
     </div>
   `;
+}
+
+async function addTagToMember(memberId) {
+  const select = document.getElementById(`add-tag-${memberId}`);
+  const tag = select.value;
+  if (!tag) return;
+
+  await fetch(`${API}/api/admin/member-tag`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ member_ids: [memberId], tag })
+  });
+  await loadMembers();
+}
+
+async function removeTag(memberId, tag) {
+  if (!confirm(`移除「${tag}」標籤？`)) return;
+  await fetch(`${API}/api/admin/member-tag`, {
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ member_ids: [memberId], tag })
+  });
+  await loadMembers();
 }
 
 // ── 標籤管理 ──
