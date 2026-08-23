@@ -112,6 +112,7 @@ async function showAdmin() {
       <button class="tab-btn" onclick="switchTab('tags')" id="tab-tags">🏷️ 標籤</button>
       <button class="tab-btn" onclick="switchTab('send')" id="tab-send">🎫 發券</button>
       <button class="tab-btn" onclick="switchTab('stamps')" id="tab-stamps">🎯 集章</button>
+      <button class="tab-btn" onclick="switchTab('scratch')" id="tab-scratch">🎰 刮刮卡</button>
       <button class="tab-btn" onclick="switchTab('coupons')" id="tab-coupons">📋 券紀錄</button>
       <button class="tab-btn" onclick="switchTab('export')" id="tab-export">📤 匯出</button>
     </div>
@@ -122,7 +123,7 @@ async function showAdmin() {
 
 async function switchTab(tab) {
   currentTab = tab;
-  ['overview','members','tags','send','stamps','coupons','export'].forEach(t => {
+  ['overview','members','tags','send','stamps','scratch','coupons','export'].forEach(t => {
     document.getElementById(`tab-${t}`).className = 'tab-btn' + (t === tab ? ' active' : '');
   });
   if (tab === 'overview') await loadOverview();
@@ -130,6 +131,7 @@ async function switchTab(tab) {
   if (tab === 'tags') await loadTags();
   if (tab === 'send') await showSendCoupon();
   if (tab === 'stamps') await loadStampCampaigns();
+  if (tab === 'scratch') await loadScratchCampaigns();
   if (tab === 'coupons') await loadCoupons();
   if (tab === 'export') showExport();
 }
@@ -602,6 +604,260 @@ async function endCampaign(id, title) {
     body: JSON.stringify({ campaign_id: id })
   });
   await loadStampCampaigns();
+}
+
+// ── 刮刮卡管理 ──
+
+let scratchPrizeRows = 1;
+
+async function loadScratchCampaigns() {
+  document.getElementById('tab-content').innerHTML = '<div class="loading">載入中...</div>';
+
+  const [campRes, tagsRes] = await Promise.all([
+    fetch(`${API}/api/admin/scratch-campaigns`),
+    fetch(`${API}/api/admin/tags`)
+  ]);
+  const campData = await campRes.json();
+  const tagsData = await tagsRes.json();
+  allTags = tagsData.tags || [];
+  const campaigns = campData.campaigns || [];
+
+  const tagOptions = allTags.map(t => `<option value="tag:${t.name}">🏷️ ${t.name}（${t.member_count} 人）</option>`).join('');
+
+  const campaignHTML = campaigns.map(c => {
+    const prizesHTML = (c.prizes || []).map(p => {
+      const limitText = p.quantity_limit < 0 ? '無上限' : `${p.quantity_used}/${p.quantity_limit}`;
+      return `<div style="display:flex;justify-content:space-between;padding:4px 0;font-size:12px;border-bottom:1px solid #f5f0eb;">
+        <span>${p.prize_type === 'none' ? '😊' : '🎁'} ${p.name}</span>
+        <span style="color:#999">${p.odds}% ｜ ${limitText}</span>
+      </div>`;
+    }).join('');
+
+    return `
+    <div class="campaign-card">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+        <div>
+          <div class="c-title">🎰 ${c.title}</div>
+          <div class="c-info">${c.description || ''}</div>
+          <div class="c-info">${c.start_date} ~ ${c.end_date}</div>
+        </div>
+        <span class="badge ${c.status === 'active' ? 'badge-active' : 'badge-used'}">${c.status === 'active' ? '進行中' : '已結束'}</span>
+      </div>
+      <div class="c-stats">
+        <div>已發 <span>${c.chances_given} 張</span></div>
+        <div>已刮 <span>${c.played} 次</span></div>
+        <div>中獎 <span>${c.won} 次</span></div>
+      </div>
+      <div style="margin-top:8px;background:white;border-radius:8px;padding:8px 12px;">${prizesHTML}</div>
+      ${c.status === 'active' ? `
+        <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;">
+          <select id="scratch-give-target-${c.id}" style="flex:1;margin:0;font-size:12px;padding:8px;min-width:120px;">
+            <option value="all">📢 全部會員</option>
+            <option value="phone">📱 指定手機</option>
+            ${tagOptions}
+          </select>
+          <input type="tel" id="scratch-give-phone-${c.id}" placeholder="手機號碼" maxlength="10" style="width:120px;margin:0;font-size:12px;padding:8px;display:none;">
+          <button class="btn btn-success btn-sm" onclick="giveScratchChance(${c.id})">發放機會</button>
+          <button class="btn btn-danger btn-sm" onclick="endScratchCampaign(${c.id},'${c.title}')">結束</button>
+        </div>
+        <script>
+          document.getElementById('scratch-give-target-${c.id}').addEventListener('change', function() {
+            document.getElementById('scratch-give-phone-${c.id}').style.display = this.value === 'phone' ? 'block' : 'none';
+          });
+        </` + `script>
+      ` : ''}
+    </div>`;
+  }).join('');
+
+  document.getElementById('tab-content').innerHTML = `
+    <div class="section" style="padding-top:20px;">
+      <div class="card">
+        <h2>🎰 建立刮刮卡活動</h2>
+        <input type="text" id="scratch-title" placeholder="活動名稱">
+        <input type="text" id="scratch-desc" placeholder="活動說明">
+        <div class="form-row">
+          <div>
+            <label style="font-size:12px;color:#999">開始日期</label>
+            <input type="date" id="scratch-start">
+          </div>
+          <div>
+            <label style="font-size:12px;color:#999">結束日期</label>
+            <input type="date" id="scratch-end">
+          </div>
+        </div>
+        <div>
+          <label style="font-size:12px;color:#999">每人可玩次數</label>
+          <input type="number" id="scratch-max" value="1" min="1" style="width:80px;">
+        </div>
+        <div style="margin-top:15px;">
+          <label style="font-size:13px;font-weight:bold;color:#333;display:block;margin-bottom:8px;">🎁 獎品設定（中獎率合計不超過 100%）</label>
+          <div id="prize-rows"></div>
+          <button class="btn btn-sm" style="background:#eee;color:#333;width:auto;margin-top:8px;" onclick="addPrizeRow()">+ 新增獎項</button>
+        </div>
+        <button class="btn btn-primary" style="margin-top:15px;" onclick="createScratchCampaign()">建立活動</button>
+        <div class="result" id="scratch-result"></div>
+      </div>
+      <div class="card">
+        <h2>所有刮刮卡活動</h2>
+        ${campaignHTML || '<p style="color:#999;text-align:center;padding:10px;">尚無活動</p>'}
+      </div>
+    </div>
+  `;
+
+  // 初始化一行獎品
+  scratchPrizeRows = 0;
+  addPrizeRow();
+}
+
+function addPrizeRow() {
+  scratchPrizeRows++;
+  const idx = scratchPrizeRows;
+  const div = document.createElement('div');
+  div.id = `prize-row-${idx}`;
+  div.style.cssText = 'background:#fff8f2;border-radius:10px;padding:12px;margin-bottom:8px;border:1px solid #ede5dc;';
+  div.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+      <span style="font-size:13px;font-weight:bold;color:#666;">獎項 ${idx}</span>
+      ${idx > 1 ? `<button class="btn btn-sm" style="background:#f5f5f5;color:#e74c3c;width:auto;padding:4px 10px;" onclick="document.getElementById('prize-row-${idx}').remove()">刪除</button>` : ''}
+    </div>
+    <input type="text" id="pz-name-${idx}" placeholder="獎品名稱（例：滷蛋券）" style="margin-bottom:6px;">
+    <div class="form-row" style="margin-bottom:6px;">
+      <div>
+        <label style="font-size:11px;color:#999">中獎率 %</label>
+        <input type="number" id="pz-odds-${idx}" placeholder="15" min="1" max="100">
+      </div>
+      <div>
+        <label style="font-size:11px;color:#999">數量上限（-1=無限）</label>
+        <input type="number" id="pz-limit-${idx}" value="-1">
+      </div>
+    </div>
+    <input type="text" id="pz-coupon-title-${idx}" placeholder="券名稱（預設同獎品名稱）" style="margin-bottom:6px;">
+    <input type="text" id="pz-coupon-desc-${idx}" placeholder="券說明" style="margin-bottom:6px;">
+    <div class="form-row">
+      <div>
+        <label style="font-size:11px;color:#999">折抵金額（贈品填 0）</label>
+        <input type="number" id="pz-discount-${idx}" value="0">
+      </div>
+      <div>
+        <label style="font-size:11px;color:#999">券有效天數</label>
+        <input type="number" id="pz-days-${idx}" value="30">
+      </div>
+    </div>
+  `;
+  document.getElementById('prize-rows').appendChild(div);
+}
+
+async function createScratchCampaign() {
+  const title = document.getElementById('scratch-title').value.trim();
+  const description = document.getElementById('scratch-desc').value.trim();
+  const start_date = document.getElementById('scratch-start').value;
+  const end_date = document.getElementById('scratch-end').value;
+  const max_plays = parseInt(document.getElementById('scratch-max').value) || 1;
+
+  if (!title || !start_date || !end_date) {
+    alert('請填寫活動名稱、開始/結束日期');
+    return;
+  }
+
+  const prizeEls = document.querySelectorAll('[id^="prize-row-"]');
+  const prizes = [];
+  let totalOdds = 0;
+
+  prizeEls.forEach(el => {
+    const idx = el.id.split('-')[2];
+    const name = document.getElementById(`pz-name-${idx}`)?.value?.trim();
+    const odds = parseInt(document.getElementById(`pz-odds-${idx}`)?.value) || 0;
+    if (!name || !odds) return;
+
+    totalOdds += odds;
+    prizes.push({
+      name,
+      prize_type: 'coupon',
+      coupon_type: 'gift',
+      coupon_title: document.getElementById(`pz-coupon-title-${idx}`)?.value?.trim() || name,
+      coupon_description: document.getElementById(`pz-coupon-desc-${idx}`)?.value?.trim() || '',
+      coupon_discount: parseInt(document.getElementById(`pz-discount-${idx}`)?.value) || 0,
+      coupon_expires_days: parseInt(document.getElementById(`pz-days-${idx}`)?.value) || 30,
+      odds,
+      quantity_limit: parseInt(document.getElementById(`pz-limit-${idx}`)?.value ?? -1)
+    });
+  });
+
+  if (prizes.length === 0) {
+    alert('請至少設定一個獎項');
+    return;
+  }
+  if (totalOdds > 100) {
+    alert(`中獎率合計 ${totalOdds}% 超過 100%，請調整`);
+    return;
+  }
+
+  const res = await fetch(`${API}/api/admin/scratch-campaign`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ title, description, trigger_type: 'manual', max_plays, start_date, end_date, prizes })
+  });
+  const data = await res.json();
+  const el = document.getElementById('scratch-result');
+  el.style.display = 'block';
+
+  if (data.success) {
+    el.className = 'result success';
+    el.innerHTML = '✅ 刮刮卡活動建立成功！';
+    setTimeout(() => loadScratchCampaigns(), 1000);
+  } else {
+    el.className = 'result error';
+    el.innerHTML = `❌ 建立失敗：${data.error}`;
+  }
+}
+
+async function giveScratchChance(campaignId) {
+  const targetVal = document.getElementById(`scratch-give-target-${campaignId}`).value;
+  let target;
+  let label;
+
+  if (targetVal === 'all') {
+    target = 'all';
+    label = '全部會員';
+  } else if (targetVal === 'phone') {
+    const phone = document.getElementById(`scratch-give-phone-${campaignId}`).value.trim();
+    if (!phone) { alert('請輸入手機號碼'); return; }
+    target = { phone };
+    label = `手機 ${phone}`;
+  } else if (targetVal.startsWith('tag:')) {
+    const tagName = targetVal.substring(4);
+    target = { tag: tagName };
+    label = `標籤「${tagName}」`;
+  } else {
+    alert('請選擇發放對象');
+    return;
+  }
+
+  if (!confirm(`確定發放刮刮卡機會給 ${label}？`)) return;
+
+  const res = await fetch(`${API}/api/admin/scratch-give`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ campaign_id: campaignId, target })
+  });
+  const data = await res.json();
+
+  if (data.success) {
+    alert(`✅ 成功發放給 ${data.given} 位會員！`);
+    await loadScratchCampaigns();
+  } else {
+    alert(`❌ 發放失敗：${data.error}`);
+  }
+}
+
+async function endScratchCampaign(id, title) {
+  if (!confirm(`確定結束「${title}」？結束後無法恢復`)) return;
+  await fetch(`${API}/api/admin/scratch-campaign/end`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ campaign_id: id })
+  });
+  await loadScratchCampaigns();
 }
 
 // ── 券紀錄 ──
