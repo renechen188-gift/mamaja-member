@@ -316,12 +316,23 @@
   }
   .scratch-modal-overlay.open { display: flex; }
   .scratch-modal {
+    position: relative;
     background: white;
     border-radius: 24px;
     width: 90%; max-width: 360px;
     padding: 28px 24px 24px;
     text-align: center;
     animation: slideUp 0.3s ease;
+  }
+  .scratch-modal-x {
+    position: absolute; top: 14px; right: 14px;
+    width: 28px; height: 28px;
+    border-radius: 50%; border: none;
+    background: var(--cream);
+    color: var(--muted);
+    font-size: 16px; line-height: 1;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
   }
   .scratch-modal-title {
     font-family: 'Noto Serif TC';
@@ -721,6 +732,7 @@
 <!-- 刮刮卡 MODAL -->
 <div class="scratch-modal-overlay" id="scratchModal">
   <div class="scratch-modal">
+    <button class="scratch-modal-x" onclick="closeScratchModal()" aria-label="關閉">✕</button>
     <div class="scratch-modal-title" id="scratchModalTitle">刮刮卡</div>
     <div class="scratch-modal-desc" id="scratchModalDesc">用手指刮開灰色區域</div>
     <div class="scratch-canvas-wrap">
