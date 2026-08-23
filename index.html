@@ -388,6 +388,82 @@
     margin-bottom: 16px;
   }
 
+  /* 轉盤抽獎 Modal */
+  .wheel-wrap {
+    position: relative;
+    width: 260px; height: 260px;
+    margin: 0 auto 18px;
+  }
+  .wheel-pointer {
+    position: absolute; top: -6px; left: 50%;
+    transform: translateX(-50%);
+    font-size: 22px;
+    color: var(--orange-dark);
+    z-index: 30;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+  }
+  .wheel-disc {
+    position: absolute; inset: 0;
+    border-radius: 50%;
+    border: 5px solid #FFE0B8;
+    box-shadow: 0 6px 20px rgba(204,102,0,0.3), inset 0 0 0 2px rgba(255,255,255,0.4);
+    transition: transform 4s cubic-bezier(0.12, 0.65, 0.12, 1);
+  }
+  .wheel-labels {
+    position: absolute; inset: 0;
+    pointer-events: none;
+    z-index: 10;
+  }
+  .wheel-label {
+    position: absolute; top: 50%; left: 50%;
+    width: 1px; height: 1px;
+    transform-origin: 0 0;
+  }
+  .wheel-label span {
+    position: absolute;
+    display: block;
+    width: 74px;
+    left: 34px; top: -8px;
+    font-size: 11px; font-weight: 700;
+    color: white;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.35);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .wheel-center-btn {
+    position: absolute; top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: 66px; height: 66px;
+    border-radius: 50%;
+    border: 3px solid white;
+    background: var(--orange-dark);
+    color: white;
+    font-family: 'Noto Serif TC';
+    font-size: 15px; font-weight: 700;
+    letter-spacing: 1px;
+    cursor: pointer;
+    z-index: 20;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.25);
+  }
+  .wheel-center-btn:disabled { opacity: 0.7; cursor: default; }
+  .wheel-result {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 16px;
+  }
+  .wheel-result-icon { font-size: 40px; margin-bottom: 6px; }
+  .wheel-result-text {
+    font-family: 'Noto Serif TC';
+    font-size: 19px; font-weight: 700;
+    color: var(--orange-dark);
+  }
+  .wheel-result-sub {
+    font-size: 13px; color: var(--muted);
+    margin-top: 4px;
+  }
+
   /* STAMP CAMPAIGNS */
   .activity-section {
     padding: 16px 16px 100px;
@@ -719,6 +795,7 @@
 
 <!-- TAB: 活動（刮刮卡 + 集章活動） -->
 <div class="tab-content" id="tab-activity">
+  <div id="wheelSection" class="scratch-section" style="display:none;"></div>
   <div id="scratchSection" class="scratch-section" style="display:none;"></div>
   <div class="activity-section" id="stampList">
     <div class="empty-card">
@@ -745,6 +822,28 @@
     </div>
     <div class="scratch-hint" id="scratchHint">用手指滑動刮開看看！</div>
     <button class="scratch-modal-close" id="scratchCloseBtn" onclick="closeScratchModal()">關閉</button>
+  </div>
+</div>
+
+<!-- 轉盤抽獎 MODAL -->
+<div class="scratch-modal-overlay" id="wheelModal">
+  <div class="scratch-modal">
+    <button class="scratch-modal-x" onclick="closeWheelModal()" aria-label="關閉">✕</button>
+    <div class="scratch-modal-title" id="wheelModalTitle">轉盤抽獎</div>
+    <div class="scratch-modal-desc" id="wheelModalDesc">點擊中間按鈕開始抽獎</div>
+    <div class="wheel-wrap">
+      <div class="wheel-pointer">▼</div>
+      <div class="wheel-disc" id="wheelDisc">
+        <div class="wheel-labels" id="wheelLabels"></div>
+      </div>
+      <button class="wheel-center-btn" id="wheelSpinBtn" onclick="spinWheel()">SPIN</button>
+    </div>
+    <div class="wheel-result" id="wheelResult">
+      <div class="wheel-result-icon" id="wheelResultIcon"></div>
+      <div class="wheel-result-text" id="wheelResultText"></div>
+      <div class="wheel-result-sub" id="wheelResultSub"></div>
+    </div>
+    <button class="scratch-modal-close" id="wheelCloseBtn" onclick="closeWheelModal()" style="display:none;">關閉</button>
   </div>
 </div>
 
@@ -829,6 +928,8 @@ let currentCampaigns = [];
 let currentTags = [];
 let currentScratchChances = [];
 let currentScratchRecords = [];
+let currentWheelChances = [];
+let currentWheelRecords = [];
 
 /* ---------- 啟動流程 ---------- */
 
@@ -859,7 +960,7 @@ async function loadMember() {
     currentMember = data.member;
     currentCoupons = data.coupons || [];
     currentTags = data.tags || [];
-    await Promise.all([loadStampCampaigns(), loadScratchChances()]);
+    await Promise.all([loadStampCampaigns(), loadScratchChances(), loadWheelChances()]);
     renderApp();
   } catch (err) {
     console.error(err);
@@ -956,6 +1057,7 @@ function renderApp() {
   }
 
   renderCoupons();
+  renderWheelCards();
   renderScratchCards();
   renderStamps();
 }
@@ -1258,6 +1360,211 @@ function renderScratchCards() {
   }
 
   section.innerHTML = html;
+}
+
+/* ---------- 轉盤抽獎 ---------- */
+
+async function loadWheelChances() {
+  try {
+    const res = await fetch(`${API}/api/wheel/my?line_id=${encodeURIComponent(lineProfile.userId)}`);
+    if (res.ok) {
+      const data = await res.json();
+      currentWheelChances = data.chances || [];
+      currentWheelRecords = data.records || [];
+    }
+  } catch (e) {
+    console.error('載入轉盤失敗', e);
+    currentWheelChances = [];
+    currentWheelRecords = [];
+  }
+}
+
+function renderWheelCards() {
+  const section = document.getElementById('wheelSection');
+  const unused = currentWheelChances.filter(c => c.status === 'unused');
+
+  if (unused.length === 0 && currentWheelRecords.length === 0) {
+    section.style.display = 'none';
+    return;
+  }
+
+  section.style.display = 'block';
+  let html = '<div class="scratch-section-title">🎡 轉盤抽獎</div>';
+
+  unused.forEach(c => {
+    html += `
+    <div class="scratch-entry" onclick="openWheelModal(${c.chance_id}, ${c.campaign_id}, '${escapeHtml(c.title)}', '${escapeHtml(c.description || '')}')">
+      <div class="scratch-entry-icon">🎡</div>
+      <div class="scratch-entry-info">
+        <div class="scratch-entry-title">${escapeHtml(c.title)}</div>
+        <div class="scratch-entry-desc">${escapeHtml(c.description || '轉一下，好禮抽不完！')}</div>
+      </div>
+      <div class="scratch-entry-arrow">›</div>
+    </div>`;
+  });
+
+  const recentWins = currentWheelRecords.filter(r => r.won).slice(0, 3);
+  if (recentWins.length > 0) {
+    html += '<div style="font-size:12px;color:var(--muted);padding:4px 2px 8px;">最近中獎紀錄</div>';
+    recentWins.forEach(r => {
+      html += `
+      <div class="scratch-entry used" style="padding:14px 20px;">
+        <div class="scratch-entry-icon" style="width:40px;height:40px;font-size:20px;">🎉</div>
+        <div class="scratch-entry-info">
+          <div class="scratch-entry-title" style="font-size:14px;">${escapeHtml(r.prize_name)}</div>
+          <div class="scratch-entry-desc">${escapeHtml(r.campaign_title)} · ${formatDate(r.created_at)}</div>
+        </div>
+      </div>`;
+    });
+  }
+
+  section.innerHTML = html;
+}
+
+let wheelPlaying = false;
+let wheelChanceId = null;
+let wheelPrizesData = [];
+const WHEEL_COLORS = ['#FF8200', '#CC6600', '#FFB100', '#8B4513', '#FF6B35', '#D2691E', '#FFA94D', '#A0522D'];
+
+async function openWheelModal(chanceId, campaignId, title, desc) {
+  if (wheelPlaying) return;
+  wheelChanceId = chanceId;
+
+  document.getElementById('wheelModalTitle').textContent = title || '轉盤抽獎';
+  document.getElementById('wheelModalDesc').textContent = desc || '點擊中間按鈕開始抽獎';
+  document.getElementById('wheelResult').style.display = 'none';
+  document.getElementById('wheelCloseBtn').style.display = 'none';
+
+  const disc = document.getElementById('wheelDisc');
+  disc.style.transition = 'none';
+  disc.style.transform = 'rotate(0deg)';
+
+  const spinBtn = document.getElementById('wheelSpinBtn');
+  spinBtn.disabled = false;
+  spinBtn.textContent = 'SPIN';
+
+  wheelPrizesData = [];
+  try {
+    const res = await fetch(`${API}/api/wheel/prizes?campaign_id=${campaignId}`);
+    const data = await res.json();
+    wheelPrizesData = data.prizes || [];
+  } catch (e) {
+    wheelPrizesData = [];
+  }
+
+  buildWheelVisual();
+  document.getElementById('wheelModal').classList.add('open');
+}
+
+function buildWheelVisual() {
+  const disc = document.getElementById('wheelDisc');
+  const labels = document.getElementById('wheelLabels');
+
+  if (wheelPrizesData.length === 0) {
+    disc.style.background = 'var(--orange-light)';
+    labels.innerHTML = '';
+    return;
+  }
+
+  let cumulative = 0;
+  const gradientParts = [];
+  let labelsHTML = '';
+
+  wheelPrizesData.forEach((p, i) => {
+    const angle = (p.odds / 100) * 360;
+    const start = cumulative;
+    const end = cumulative + angle;
+    const color = WHEEL_COLORS[i % WHEEL_COLORS.length];
+    gradientParts.push(`${color} ${start}deg ${end}deg`);
+
+    const center = start + angle / 2;
+    const name = p.prize_type === 'none' ? '謝謝參與' : p.name;
+    // -90 是因為 conic-gradient 的 0deg 在正上方，而 CSS rotate() 的 0deg 預設朝右，需要對齊
+    labelsHTML += `<div class="wheel-label" style="transform: rotate(${center - 90}deg);"><span>${escapeHtml(name)}</span></div>`;
+
+    cumulative = end;
+  });
+
+  disc.style.background = `conic-gradient(${gradientParts.join(', ')})`;
+  labels.innerHTML = labelsHTML;
+}
+
+async function spinWheel() {
+  if (wheelPlaying) return;
+  if (wheelPrizesData.length === 0) {
+    alert('轉盤資料載入失敗，請重新進入再試一次');
+    return;
+  }
+  wheelPlaying = true;
+  const spinBtn = document.getElementById('wheelSpinBtn');
+  spinBtn.disabled = true;
+  spinBtn.textContent = '···';
+
+  let data;
+  try {
+    const res = await fetch(`${API}/api/wheel/play`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ line_id: lineProfile.userId, chance_id: wheelChanceId })
+    });
+    data = await res.json();
+  } catch (e) {
+    data = { success: false, error: '網路錯誤，請重試' };
+  }
+
+  if (!data.success) {
+    spinBtn.disabled = false;
+    spinBtn.textContent = 'SPIN';
+    wheelPlaying = false;
+    document.getElementById('wheelResult').style.display = 'flex';
+    document.getElementById('wheelResultIcon').textContent = '⚠️';
+    document.getElementById('wheelResultText').textContent = data.error || '發生錯誤';
+    document.getElementById('wheelResultSub').textContent = '';
+    document.getElementById('wheelCloseBtn').style.display = 'block';
+    return;
+  }
+
+  let targetIndex = data.prize_id ? wheelPrizesData.findIndex(p => p.id === data.prize_id) : -1;
+  if (targetIndex === -1) targetIndex = wheelPrizesData.findIndex(p => p.prize_type === 'none');
+  if (targetIndex === -1) targetIndex = 0;
+
+  let cumulative = 0;
+  for (let i = 0; i < targetIndex; i++) {
+    cumulative += (wheelPrizesData[i].odds / 100) * 360;
+  }
+  const segAngle = (wheelPrizesData[targetIndex].odds / 100) * 360;
+  const jitter = segAngle > 4 ? (Math.random() - 0.5) * segAngle * 0.6 : 0;
+  const center = cumulative + segAngle / 2 + jitter;
+
+  const finalRotation = 5 * 360 + ((360 - center) % 360);
+
+  const disc = document.getElementById('wheelDisc');
+  disc.style.transition = 'transform 4s cubic-bezier(0.12, 0.65, 0.12, 1)';
+  disc.style.transform = `rotate(${finalRotation}deg)`;
+
+  setTimeout(() => {
+    document.getElementById('wheelResult').style.display = 'flex';
+    if (data.won) {
+      document.getElementById('wheelResultIcon').textContent = '🎉';
+      document.getElementById('wheelResultText').textContent = data.prize_name;
+      document.getElementById('wheelResultSub').textContent = '恭喜中獎！券已自動發送';
+    } else {
+      document.getElementById('wheelResultIcon').textContent = '😊';
+      document.getElementById('wheelResultText').textContent = '謝謝參與';
+      document.getElementById('wheelResultSub').textContent = '下次再來！';
+    }
+    document.getElementById('wheelCloseBtn').style.display = 'block';
+  }, 4100);
+}
+
+function closeWheelModal() {
+  document.getElementById('wheelModal').classList.remove('open');
+  wheelPlaying = false;
+  wheelChanceId = null;
+  loadWheelChances().then(() => {
+    renderWheelCards();
+    loadMember();
+  });
 }
 
 let scratchPlaying = false;
