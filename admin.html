@@ -343,10 +343,30 @@ async function runAutoTag() {
 
 // ── 發券（支援標籤篩選）──
 
+let couponTemplates = [];
+
 async function showSendCoupon() {
-  const tagsRes = await fetch(`${API}/api/admin/tags`);
+  const [tagsRes, couponsRes] = await Promise.all([
+    fetch(`${API}/api/admin/tags`),
+    fetch(`${API}/api/admin/coupons`)
+  ]);
   const tagsData = await tagsRes.json();
+  const couponsData = await couponsRes.json();
   allTags = tagsData.tags || [];
+
+  // 從歷史券建立模板（依券名去重，保留最新一筆的資料）
+  const templateMap = {};
+  for (const c of (couponsData.coupons || [])) {
+    if (!templateMap[c.title]) {
+      templateMap[c.title] = { type: c.type || 'gift', title: c.title, description: c.description || '', discount: c.discount || 0 };
+    }
+  }
+  couponTemplates = Object.values(templateMap);
+
+  const templateOptions = couponTemplates.map((t, i) => {
+    const label = t.type === 'gift' ? '🎁' : '💰';
+    return `<option value="${i}">${label} ${t.title}</option>`;
+  }).join('');
 
   const tagOptions = allTags.map(t => `<option value="tag:${t.name}">🏷️ ${t.name}（${t.member_count} 人）</option>`).join('');
   const monthOptions = Array.from({length: 12}, (_, i) => {
@@ -358,6 +378,16 @@ async function showSendCoupon() {
     <div class="section" style="padding-top:20px;">
       <div class="card">
         <h2>🎫 發送優惠券</h2>
+        ${couponTemplates.length > 0 ? `
+          <label style="font-size:13px;color:#666;display:block;margin-bottom:5px;">📋 快速選用歷史券</label>
+          <div style="display:flex;gap:8px;margin-bottom:15px;">
+            <select id="c-template" style="flex:1;margin:0;">
+              <option value="">— 自訂新券 —</option>
+              ${templateOptions}
+            </select>
+            <button class="btn btn-success btn-sm" style="width:auto;padding:8px 16px;margin:0;" onclick="applyTemplate()">帶入</button>
+          </div>
+        ` : ''}
         <label style="font-size:13px;color:#666;display:block;margin-bottom:5px;">券類型</label>
         <select id="c-type">
           <option value="gift">🎁 贈品券（免費兌換品項）</option>
@@ -382,6 +412,17 @@ async function showSendCoupon() {
       </div>
     </div>
   `;
+}
+
+function applyTemplate() {
+  const select = document.getElementById('c-template');
+  const idx = select.value;
+  if (idx === '') return;
+  const t = couponTemplates[parseInt(idx)];
+  document.getElementById('c-type').value = t.type || 'gift';
+  document.getElementById('c-title').value = t.title;
+  document.getElementById('c-desc').value = t.description;
+  document.getElementById('c-discount').value = t.discount || 0;
 }
 
 async function sendCoupon() {
