@@ -263,6 +263,120 @@
     line-height: 1.7;
   }
 
+  /* SCRATCH CARD */
+  .scratch-section {
+    padding: 16px 16px 8px;
+  }
+  .scratch-section-title {
+    font-family: 'Noto Serif TC';
+    font-size: 15px; font-weight: 700;
+    color: var(--text);
+    margin-bottom: 12px;
+    padding-left: 2px;
+  }
+  .scratch-entry {
+    background: linear-gradient(135deg, #FF8200 0%, #E06800 100%);
+    border-radius: 16px;
+    padding: 20px;
+    color: white;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    cursor: pointer;
+    margin-bottom: 12px;
+    box-shadow: 0 4px 16px rgba(255,130,0,0.25);
+    transition: transform 0.1s;
+  }
+  .scratch-entry:active { transform: scale(0.98); }
+  .scratch-entry-icon {
+    width: 52px; height: 52px;
+    background: rgba(255,255,255,0.2);
+    border-radius: 14px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 26px;
+    flex-shrink: 0;
+  }
+  .scratch-entry-info { flex: 1; }
+  .scratch-entry-title { font-size: 16px; font-weight: 700; margin-bottom: 3px; }
+  .scratch-entry-desc { font-size: 12px; opacity: 0.85; }
+  .scratch-entry-arrow { font-size: 20px; opacity: 0.7; }
+  .scratch-entry.used {
+    background: linear-gradient(135deg, #B0A090 0%, #9A8A78 100%);
+    box-shadow: none;
+    cursor: default;
+  }
+
+  /* 刮刮卡 Modal */
+  .scratch-modal-overlay {
+    display: none;
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.7);
+    z-index: 250;
+    align-items: center; justify-content: center;
+  }
+  .scratch-modal-overlay.open { display: flex; }
+  .scratch-modal {
+    background: white;
+    border-radius: 24px;
+    width: 90%; max-width: 360px;
+    padding: 28px 24px 24px;
+    text-align: center;
+    animation: slideUp 0.3s ease;
+  }
+  .scratch-modal-title {
+    font-family: 'Noto Serif TC';
+    font-size: 20px; font-weight: 700;
+    color: var(--text);
+    margin-bottom: 6px;
+  }
+  .scratch-modal-desc {
+    font-size: 13px; color: var(--muted);
+    margin-bottom: 20px;
+  }
+  .scratch-canvas-wrap {
+    position: relative;
+    width: 280px; height: 180px;
+    margin: 0 auto 20px;
+    border-radius: 16px;
+    overflow: hidden;
+    border: 2px solid var(--border);
+  }
+  .scratch-result-layer {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    background: var(--orange-light);
+  }
+  .scratch-result-icon { font-size: 44px; margin-bottom: 8px; }
+  .scratch-result-text {
+    font-family: 'Noto Serif TC';
+    font-size: 20px; font-weight: 700;
+    color: var(--orange-dark);
+  }
+  .scratch-result-sub {
+    font-size: 13px; color: var(--muted);
+    margin-top: 4px;
+  }
+  .scratch-canvas {
+    position: absolute; inset: 0;
+    cursor: pointer;
+    touch-action: none;
+  }
+  .scratch-modal-close {
+    width: 100%;
+    background: var(--orange);
+    color: white; font-size: 15px; font-weight: 700;
+    padding: 14px;
+    border-radius: 30px; border: none;
+    cursor: pointer;
+    font-family: 'Noto Sans TC';
+    display: none;
+  }
+  .scratch-hint {
+    font-size: 12px; color: #C0B0A0;
+    margin-bottom: 16px;
+  }
+
   /* STAMP CAMPAIGNS */
   .activity-section {
     padding: 16px 16px 100px;
@@ -592,14 +706,33 @@
 
 </div>
 
-<!-- TAB: 活動（集章活動） -->
+<!-- TAB: 活動（刮刮卡 + 集章活動） -->
 <div class="tab-content" id="tab-activity">
+  <div id="scratchSection" class="scratch-section" style="display:none;"></div>
   <div class="activity-section" id="stampList">
     <div class="empty-card">
       <div class="empty-icon">🎯</div>
       <div class="empty-text">目前沒有進行中的活動</div>
       <div class="empty-sub">請留意門市公告與 LINE 通知</div>
     </div>
+  </div>
+</div>
+
+<!-- 刮刮卡 MODAL -->
+<div class="scratch-modal-overlay" id="scratchModal">
+  <div class="scratch-modal">
+    <div class="scratch-modal-title" id="scratchModalTitle">刮刮卡</div>
+    <div class="scratch-modal-desc" id="scratchModalDesc">用手指刮開灰色區域</div>
+    <div class="scratch-canvas-wrap">
+      <div class="scratch-result-layer" id="scratchResultLayer">
+        <div class="scratch-result-icon" id="scratchResultIcon">🎉</div>
+        <div class="scratch-result-text" id="scratchResultText">載入中...</div>
+        <div class="scratch-result-sub" id="scratchResultSub"></div>
+      </div>
+      <canvas class="scratch-canvas" id="scratchCanvas" width="280" height="180"></canvas>
+    </div>
+    <div class="scratch-hint" id="scratchHint">用手指滑動刮開看看！</div>
+    <button class="scratch-modal-close" id="scratchCloseBtn" onclick="closeScratchModal()">關閉</button>
   </div>
 </div>
 
@@ -682,6 +815,8 @@ let currentMember = null;
 let currentCoupons = [];
 let currentCampaigns = [];
 let currentTags = [];
+let currentScratchChances = [];
+let currentScratchRecords = [];
 
 /* ---------- 啟動流程 ---------- */
 
@@ -712,7 +847,7 @@ async function loadMember() {
     currentMember = data.member;
     currentCoupons = data.coupons || [];
     currentTags = data.tags || [];
-    await loadStampCampaigns();
+    await Promise.all([loadStampCampaigns(), loadScratchChances()]);
     renderApp();
   } catch (err) {
     console.error(err);
@@ -809,6 +944,7 @@ function renderApp() {
   }
 
   renderCoupons();
+  renderScratchCards();
   renderStamps();
 }
 
@@ -1051,6 +1187,196 @@ function renderStamps() {
       </div>
     </div>`;
   }).join('');
+}
+
+/* ---------- 刮刮卡 ---------- */
+
+async function loadScratchChances() {
+  try {
+    const res = await fetch(`${API}/api/scratch/my?line_id=${encodeURIComponent(lineProfile.userId)}`);
+    if (res.ok) {
+      const data = await res.json();
+      currentScratchChances = data.chances || [];
+      currentScratchRecords = data.records || [];
+    }
+  } catch (e) {
+    console.error('載入刮刮卡失敗', e);
+    currentScratchChances = [];
+    currentScratchRecords = [];
+  }
+}
+
+function renderScratchCards() {
+  const section = document.getElementById('scratchSection');
+  const unused = currentScratchChances.filter(c => c.status === 'unused');
+
+  if (unused.length === 0 && currentScratchRecords.length === 0) {
+    section.style.display = 'none';
+    return;
+  }
+
+  section.style.display = 'block';
+  let html = '<div class="scratch-section-title">🎰 刮刮卡</div>';
+
+  unused.forEach(c => {
+    html += `
+    <div class="scratch-entry" onclick="openScratchCard(${c.chance_id}, '${escapeHtml(c.title)}', '${escapeHtml(c.description || '')}')">
+      <div class="scratch-entry-icon">🎰</div>
+      <div class="scratch-entry-info">
+        <div class="scratch-entry-title">${escapeHtml(c.title)}</div>
+        <div class="scratch-entry-desc">${escapeHtml(c.description || '刮開看看有什麼驚喜！')}</div>
+      </div>
+      <div class="scratch-entry-arrow">›</div>
+    </div>`;
+  });
+
+  const recentWins = currentScratchRecords.filter(r => r.won).slice(0, 3);
+  if (recentWins.length > 0) {
+    html += '<div style="font-size:12px;color:var(--muted);padding:4px 2px 8px;">最近中獎紀錄</div>';
+    recentWins.forEach(r => {
+      html += `
+      <div class="scratch-entry used" style="padding:14px 20px;">
+        <div class="scratch-entry-icon" style="width:40px;height:40px;font-size:20px;">🎉</div>
+        <div class="scratch-entry-info">
+          <div class="scratch-entry-title" style="font-size:14px;">${escapeHtml(r.prize_name)}</div>
+          <div class="scratch-entry-desc">${escapeHtml(r.campaign_title)} · ${formatDate(r.created_at)}</div>
+        </div>
+      </div>`;
+    });
+  }
+
+  section.innerHTML = html;
+}
+
+let scratchPlaying = false;
+let scratchChanceId = null;
+
+function openScratchCard(chanceId, title, desc) {
+  if (scratchPlaying) return;
+  scratchChanceId = chanceId;
+  scratchPlaying = true;
+
+  document.getElementById('scratchModalTitle').textContent = title || '刮刮卡';
+  document.getElementById('scratchModalDesc').textContent = desc || '用手指刮開灰色區域';
+  document.getElementById('scratchResultText').textContent = '刮開看看！';
+  document.getElementById('scratchResultIcon').textContent = '❓';
+  document.getElementById('scratchResultSub').textContent = '';
+  document.getElementById('scratchHint').style.display = 'block';
+  document.getElementById('scratchCloseBtn').style.display = 'none';
+
+  const canvas = document.getElementById('scratchCanvas');
+  const ctx = canvas.getContext('2d');
+  canvas.width = 280;
+  canvas.height = 180;
+
+  // 金色刮開層
+  const gradient = ctx.createLinearGradient(0, 0, 280, 180);
+  gradient.addColorStop(0, '#C9A94E');
+  gradient.addColorStop(0.5, '#E8D48B');
+  gradient.addColorStop(1, '#C9A94E');
+  ctx.fillStyle = gradient;
+  ctx.fillRect(0, 0, 280, 180);
+
+  // 裝飾文字
+  ctx.fillStyle = 'rgba(255,255,255,0.3)';
+  ctx.font = 'bold 18px "Noto Sans TC"';
+  ctx.textAlign = 'center';
+  ctx.fillText('刮開這裡', 140, 85);
+  ctx.font = '13px "Noto Sans TC"';
+  ctx.fillText('▼ 用手指滑動 ▼', 140, 110);
+
+  canvas.style.display = 'block';
+
+  let isDrawing = false;
+  let hasCalledAPI = false;
+  let scratchedPixels = 0;
+  const totalPixels = 280 * 180;
+
+  function getPos(e) {
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    if (e.touches) {
+      return { x: (e.touches[0].clientX - rect.left) * scaleX, y: (e.touches[0].clientY - rect.top) * scaleY };
+    }
+    return { x: (e.clientX - rect.left) * scaleX, y: (e.clientY - rect.top) * scaleY };
+  }
+
+  function scratch(pos) {
+    ctx.globalCompositeOperation = 'destination-out';
+    ctx.beginPath();
+    ctx.arc(pos.x, pos.y, 22, 0, Math.PI * 2);
+    ctx.fill();
+    checkProgress();
+  }
+
+  async function checkProgress() {
+    const imageData = ctx.getImageData(0, 0, 280, 180);
+    let cleared = 0;
+    for (let i = 3; i < imageData.data.length; i += 4) {
+      if (imageData.data[i] === 0) cleared++;
+    }
+    const pct = cleared / totalPixels;
+
+    if (pct > 0.35 && !hasCalledAPI) {
+      hasCalledAPI = true;
+      try {
+        const res = await fetch(`${API}/api/scratch/play`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ line_id: lineProfile.userId, chance_id: scratchChanceId })
+        });
+        const data = await res.json();
+        if (data.success) {
+          if (data.won) {
+            document.getElementById('scratchResultIcon').textContent = '🎉';
+            document.getElementById('scratchResultText').textContent = data.prize_name;
+            document.getElementById('scratchResultSub').textContent = '恭喜中獎！券已自動發送';
+          } else {
+            document.getElementById('scratchResultIcon').textContent = '😊';
+            document.getElementById('scratchResultText').textContent = '謝謝參與';
+            document.getElementById('scratchResultSub').textContent = '下次再來！';
+          }
+        } else {
+          document.getElementById('scratchResultIcon').textContent = '⚠️';
+          document.getElementById('scratchResultText').textContent = data.error || '發生錯誤';
+        }
+      } catch (err) {
+        document.getElementById('scratchResultIcon').textContent = '⚠️';
+        document.getElementById('scratchResultText').textContent = '網路錯誤，請重試';
+      }
+    }
+
+    if (pct > 0.55) {
+      canvas.style.display = 'none';
+      document.getElementById('scratchHint').style.display = 'none';
+      document.getElementById('scratchCloseBtn').style.display = 'block';
+    }
+  }
+
+  function onStart(e) { e.preventDefault(); isDrawing = true; scratch(getPos(e)); }
+  function onMove(e) { e.preventDefault(); if (isDrawing) scratch(getPos(e)); }
+  function onEnd() { isDrawing = false; }
+
+  canvas.onmousedown = onStart;
+  canvas.onmousemove = onMove;
+  canvas.onmouseup = onEnd;
+  canvas.onmouseleave = onEnd;
+  canvas.ontouchstart = onStart;
+  canvas.ontouchmove = onMove;
+  canvas.ontouchend = onEnd;
+
+  document.getElementById('scratchModal').classList.add('open');
+}
+
+function closeScratchModal() {
+  document.getElementById('scratchModal').classList.remove('open');
+  scratchPlaying = false;
+  scratchChanceId = null;
+  loadScratchChances().then(() => {
+    renderScratchCards();
+    loadMember();
+  });
 }
 
 /* ---------- 生日儲存 ---------- */
