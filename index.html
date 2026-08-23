@@ -1289,8 +1289,18 @@ function openScratchCard(chanceId, title, desc) {
 
   let isDrawing = false;
   let hasCalledAPI = false;
+  let apiResultReady = false;
+  let enoughScratched = false;
   let scratchedPixels = 0;
   const totalPixels = 280 * 180;
+
+  function revealIfReady() {
+    if (enoughScratched && apiResultReady) {
+      canvas.style.display = 'none';
+      document.getElementById('scratchHint').style.display = 'none';
+      document.getElementById('scratchCloseBtn').style.display = 'block';
+    }
+  }
 
   function getPos(e) {
     const rect = canvas.getBoundingClientRect();
@@ -1345,12 +1355,13 @@ function openScratchCard(chanceId, title, desc) {
         document.getElementById('scratchResultIcon').textContent = '⚠️';
         document.getElementById('scratchResultText').textContent = '網路錯誤，請重試';
       }
+      apiResultReady = true;
+      revealIfReady();
     }
 
     if (pct > 0.55) {
-      canvas.style.display = 'none';
-      document.getElementById('scratchHint').style.display = 'none';
-      document.getElementById('scratchCloseBtn').style.display = 'block';
+      enoughScratched = true;
+      revealIfReady();
     }
   }
 
