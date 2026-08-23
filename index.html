@@ -1304,9 +1304,11 @@ function openScratchCard(chanceId, title, desc) {
   let hasCalledAPI = false;
   let apiResultReady = false;
   let enoughScratched = false;
-  let scratchedPixels = 0;
   let strokeCount = 0;
-  const totalPixels = 280 * 180;
+  let hasMoved = false;
+  const CALL_API_AT = 8;
+  const REVEAL_AT = 14;
+  const dbg = document.getElementById('scratchDebug');
 
   function revealIfReady() {
     if (enoughScratched && apiResultReady) {
@@ -1320,83 +1322,86 @@ function openScratchCard(chanceId, title, desc) {
     const rect = canvas.getBoundingClientRect();
     const scaleX = canvas.width / rect.width;
     const scaleY = canvas.height / rect.height;
-    if (e.touches) {
+    if (e.touches && e.touches.length) {
       return { x: (e.touches[0].clientX - rect.left) * scaleX, y: (e.touches[0].clientY - rect.top) * scaleY };
+    }
+    if (e.changedTouches && e.changedTouches.length) {
+      return { x: (e.changedTouches[0].clientX - rect.left) * scaleX, y: (e.changedTouches[0].clientY - rect.top) * scaleY };
     }
     return { x: (e.clientX - rect.left) * scaleX, y: (e.clientY - rect.top) * scaleY };
   }
 
   function scratch(pos) {
-    ctx.globalCompositeOperation = 'destination-out';
-    ctx.beginPath();
-    ctx.arc(pos.x, pos.y, 22, 0, Math.PI * 2);
-    ctx.fill();
-    checkProgress();
-  }
-
-  async function checkProgress() {
-    strokeCount++;
-    let pct = 0;
-    const dbg = document.getElementById('scratchDebug');
     try {
-      const imageData = ctx.getImageData(0, 0, 280, 180);
-      let cleared = 0;
-      for (let i = 3; i < imageData.data.length; i += 4) {
-        if (imageData.data[i] === 0) cleared++;
-      }
-      pct = cleared / totalPixels;
-      if (dbg) dbg.textContent = `[除錯] 刮開 ${Math.round(pct * 100)}%（第${strokeCount}下，像素偵測）`;
-    } catch (err) {
-      // 部分瀏覽器可能限制 getImageData，改用刮動次數估算進度
-      pct = Math.min(strokeCount / 20, 1);
-      if (dbg) dbg.textContent = `[除錯] 刮開約 ${Math.round(pct * 100)}%（第${strokeCount}下，估算法，getImageData錯誤：${err.message}）`;
-    }
+      ctx.globalCompositeOperation = 'destination-out';
+      ctx.beginPath();
+      ctx.arc(pos.x, pos.y, 24, 0, Math.PI * 2);
+      ctx.fill();
+    } catch (err) { /* 視覺效果失敗不影響判定 */ }
 
-    if (pct > 0.35 && !hasCalledAPI) {
+    strokeCount++;
+    if (dbg) dbg.textContent = `[除錯] 已刮 ${strokeCount} 下`;
+
+    if (strokeCount >= CALL_API_AT && !hasCalledAPI) {
       hasCalledAPI = true;
-      if (dbg) dbg.textContent = `[除錯] 呼叫 API 中...`;
-      try {
-        const res = await fetch(`${API}/api/scratch/play`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ line_id: lineProfile.userId, chance_id: scratchChanceId })
-        });
-        if (dbg) dbg.textContent = `[除錯] API 回應狀態 ${res.status}`;
-        const data = await res.json();
-        if (data.success) {
-          if (data.won) {
-            document.getElementById('scratchResultIcon').textContent = '🎉';
-            document.getElementById('scratchResultText').textContent = data.prize_name;
-            document.getElementById('scratchResultSub').textContent = '恭喜中獎！券已自動發送';
-          } else {
-            document.getElementById('scratchResultIcon').textContent = '😊';
-            document.getElementById('scratchResultText').textContent = '謝謝參與';
-            document.getElementById('scratchResultSub').textContent = '下次再來！';
-          }
-          if (dbg) dbg.textContent = `[除錯] 成功 won=${data.won}`;
-        } else {
-          document.getElementById('scratchResultIcon').textContent = '⚠️';
-          document.getElementById('scratchResultText').textContent = data.error || '發生錯誤';
-          if (dbg) dbg.textContent = `[除錯] API 錯誤：${data.error || '未知'}`;
-        }
-      } catch (err) {
-        document.getElementById('scratchResultIcon').textContent = '⚠️';
-        document.getElementById('scratchResultText').textContent = '網路錯誤，請重試';
-        if (dbg) dbg.textContent = `[除錯] fetch 例外：${err.message}`;
-      }
-      apiResultReady = true;
-      revealIfReady();
+      playScratch();
     }
-
-    if (pct > 0.55) {
+    if (strokeCount >= REVEAL_AT) {
       enoughScratched = true;
       revealIfReady();
     }
   }
 
+  async function playScratch() {
+    if (dbg) dbg.textContent = `[除錯] 呼叫 API 中...`;
+    try {
+      const res = await fetch(`${API}/api/scratch/play`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ line_id: lineProfile.userId, chance_id: scratchChanceId })
+      });
+      if (dbg) dbg.textContent = `[除錯] API 回應狀態 ${res.status}`;
+      const data = await res.json();
+      if (data.success) {
+        if (data.won) {
+          document.getElementById('scratchResultIcon').textContent = '🎉';
+          document.getElementById('scratchResultText').textContent = data.prize_name;
+          document.getElementById('scratchResultSub').textContent = '恭喜中獎！券已自動發送';
+        } else {
+          document.getElementById('scratchResultIcon').textContent = '😊';
+          document.getElementById('scratchResultText').textContent = '謝謝參與';
+          document.getElementById('scratchResultSub').textContent = '下次再來！';
+        }
+        if (dbg) dbg.textContent = `[除錯] 成功 won=${data.won}`;
+      } else {
+        document.getElementById('scratchResultIcon').textContent = '⚠️';
+        document.getElementById('scratchResultText').textContent = data.error || '發生錯誤';
+        if (dbg) dbg.textContent = `[除錯] API 錯誤：${data.error || '未知'}`;
+      }
+    } catch (err) {
+      document.getElementById('scratchResultIcon').textContent = '⚠️';
+      document.getElementById('scratchResultText').textContent = '網路錯誤，請重試';
+      if (dbg) dbg.textContent = `[除錯] fetch 例外：${err.message}`;
+    }
+    apiResultReady = true;
+    revealIfReady();
+  }
+
   function onStart(e) { e.preventDefault(); isDrawing = true; scratch(getPos(e)); }
-  function onMove(e) { e.preventDefault(); if (isDrawing) scratch(getPos(e)); }
-  function onEnd() { isDrawing = false; checkProgress(); }
+  function onMove(e) { e.preventDefault(); if (isDrawing) { hasMoved = true; scratch(getPos(e)); } }
+  function onEnd(e) {
+    e.preventDefault();
+    isDrawing = false;
+    // 手指放開時，只要真的有滑動過（不是誤觸單點）就視為完成一次刮開手勢
+    if (hasMoved && !hasCalledAPI) {
+      hasCalledAPI = true;
+      playScratch();
+    }
+    if (hasMoved) {
+      enoughScratched = true;
+      revealIfReady();
+    }
+  }
 
   canvas.onmousedown = onStart;
   canvas.onmousemove = onMove;
@@ -1405,6 +1410,7 @@ function openScratchCard(chanceId, title, desc) {
   canvas.ontouchstart = onStart;
   canvas.ontouchmove = onMove;
   canvas.ontouchend = onEnd;
+  canvas.ontouchcancel = onEnd;
 
   document.getElementById('scratchModal').classList.add('open');
 }
