@@ -565,7 +565,7 @@
 <div class="header">
   <img class="header-banner" src="banner.jpg" alt="麻媽家">
   <div class="header-member">
-    <div class="header-member-label">會員</div>
+    <div class="header-member-label" id="memberLabel">會員</div>
     <div class="header-member-name" id="memberName">—</div>
   </div>
 </div>
@@ -681,6 +681,7 @@ let lineProfile = null;
 let currentMember = null;
 let currentCoupons = [];
 let currentCampaigns = [];
+let currentTags = [];
 
 /* ---------- 啟動流程 ---------- */
 
@@ -710,6 +711,7 @@ async function loadMember() {
     const data = await res.json();
     currentMember = data.member;
     currentCoupons = data.coupons || [];
+    currentTags = data.tags || [];
     await loadStampCampaigns();
     renderApp();
   } catch (err) {
@@ -776,6 +778,21 @@ function renderApp() {
 
   const displayName = currentMember.name || (lineProfile && lineProfile.displayName) || '會員';
   document.getElementById('memberName').textContent = displayName;
+
+  // 依標籤顯示身分級別
+  const labelEl = document.getElementById('memberLabel');
+  if (currentTags.includes('VIP')) {
+    labelEl.textContent = 'VIP 會員';
+    labelEl.style.color = '#FFD700';
+  } else if (currentTags.includes('常客')) {
+    labelEl.textContent = '常客會員';
+    labelEl.style.color = 'rgba(255,255,255,0.85)';
+  } else if (currentTags.includes('新會員')) {
+    labelEl.textContent = '新會員';
+    labelEl.style.color = 'rgba(255,255,255,0.85)';
+  } else {
+    labelEl.textContent = '會員';
+  }
   document.getElementById('profileName').textContent = displayName;
   document.getElementById('profilePhone').textContent = currentMember.phone || '未填寫';
   document.getElementById('profileJoinDate').textContent = formatDate(currentMember.created_at);
