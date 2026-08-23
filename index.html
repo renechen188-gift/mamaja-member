@@ -1292,6 +1292,7 @@ function openScratchCard(chanceId, title, desc) {
   let apiResultReady = false;
   let enoughScratched = false;
   let scratchedPixels = 0;
+  let strokeCount = 0;
   const totalPixels = 280 * 180;
 
   function revealIfReady() {
@@ -1321,12 +1322,19 @@ function openScratchCard(chanceId, title, desc) {
   }
 
   async function checkProgress() {
-    const imageData = ctx.getImageData(0, 0, 280, 180);
-    let cleared = 0;
-    for (let i = 3; i < imageData.data.length; i += 4) {
-      if (imageData.data[i] === 0) cleared++;
+    strokeCount++;
+    let pct = 0;
+    try {
+      const imageData = ctx.getImageData(0, 0, 280, 180);
+      let cleared = 0;
+      for (let i = 3; i < imageData.data.length; i += 4) {
+        if (imageData.data[i] === 0) cleared++;
+      }
+      pct = cleared / totalPixels;
+    } catch (err) {
+      // 部分瀏覽器可能限制 getImageData，改用刮動次數估算進度
+      pct = Math.min(strokeCount / 20, 1);
     }
-    const pct = cleared / totalPixels;
 
     if (pct > 0.35 && !hasCalledAPI) {
       hasCalledAPI = true;
@@ -1367,7 +1375,7 @@ function openScratchCard(chanceId, title, desc) {
 
   function onStart(e) { e.preventDefault(); isDrawing = true; scratch(getPos(e)); }
   function onMove(e) { e.preventDefault(); if (isDrawing) scratch(getPos(e)); }
-  function onEnd() { isDrawing = false; }
+  function onEnd() { isDrawing = false; checkProgress(); }
 
   canvas.onmousedown = onStart;
   canvas.onmousemove = onMove;
