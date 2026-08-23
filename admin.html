@@ -402,16 +402,25 @@ async function showSendCoupon() {
         <label style="font-size:13px;color:#666;display:block;margin-bottom:5px;">有效天數</label>
         <input type="number" id="c-days" placeholder="90" value="90">
         <label style="font-size:13px;color:#666;display:block;margin-bottom:5px;">發送對象</label>
-        <select id="c-target">
+        <select id="c-target" onchange="togglePhoneInput()">
           <option value="all">📢 全部會員</option>
+          <option value="phone">📱 指定會員（手機號碼）</option>
           ${tagOptions}
           ${monthOptions}
         </select>
+        <div id="phone-input-wrap" style="display:none;">
+          <input type="tel" id="c-phone" placeholder="輸入會員手機號碼" maxlength="10" inputmode="numeric">
+        </div>
         <button class="btn btn-primary" onclick="sendCoupon()">發送優惠券</button>
         <div class="result" id="send-result"></div>
       </div>
     </div>
   `;
+}
+
+function togglePhoneInput() {
+  const val = document.getElementById('c-target').value;
+  document.getElementById('phone-input-wrap').style.display = val === 'phone' ? 'block' : 'none';
 }
 
 function applyTemplate() {
@@ -440,6 +449,11 @@ async function sendCoupon() {
   if (targetVal === 'all') {
     target = 'all';
     targetLabel = '全部會員';
+  } else if (targetVal === 'phone') {
+    const phone = (document.getElementById('c-phone').value || '').trim();
+    if (!phone) { alert('請輸入手機號碼'); return; }
+    target = { phone };
+    targetLabel = `手機 ${phone}`;
   } else if (targetVal.startsWith('tag:')) {
     const tagName = targetVal.substring(4);
     target = { tag: tagName };
