@@ -744,6 +744,7 @@
       <canvas class="scratch-canvas" id="scratchCanvas" width="280" height="180"></canvas>
     </div>
     <div class="scratch-hint" id="scratchHint">用手指滑動刮開看看！</div>
+    <div id="scratchDebug" style="font-size:11px;color:#bbb;margin-top:6px;min-height:14px;"></div>
     <button class="scratch-modal-close" id="scratchCloseBtn" onclick="closeScratchModal()">關閉</button>
   </div>
 </div>
@@ -1336,6 +1337,7 @@ function openScratchCard(chanceId, title, desc) {
   async function checkProgress() {
     strokeCount++;
     let pct = 0;
+    const dbg = document.getElementById('scratchDebug');
     try {
       const imageData = ctx.getImageData(0, 0, 280, 180);
       let cleared = 0;
@@ -1343,19 +1345,23 @@ function openScratchCard(chanceId, title, desc) {
         if (imageData.data[i] === 0) cleared++;
       }
       pct = cleared / totalPixels;
+      if (dbg) dbg.textContent = `[除錯] 刮開 ${Math.round(pct * 100)}%（第${strokeCount}下，像素偵測）`;
     } catch (err) {
       // 部分瀏覽器可能限制 getImageData，改用刮動次數估算進度
       pct = Math.min(strokeCount / 20, 1);
+      if (dbg) dbg.textContent = `[除錯] 刮開約 ${Math.round(pct * 100)}%（第${strokeCount}下，估算法，getImageData錯誤：${err.message}）`;
     }
 
     if (pct > 0.35 && !hasCalledAPI) {
       hasCalledAPI = true;
+      if (dbg) dbg.textContent = `[除錯] 呼叫 API 中...`;
       try {
         const res = await fetch(`${API}/api/scratch/play`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ line_id: lineProfile.userId, chance_id: scratchChanceId })
         });
+        if (dbg) dbg.textContent = `[除錯] API 回應狀態 ${res.status}`;
         const data = await res.json();
         if (data.success) {
           if (data.won) {
@@ -1367,13 +1373,16 @@ function openScratchCard(chanceId, title, desc) {
             document.getElementById('scratchResultText').textContent = '謝謝參與';
             document.getElementById('scratchResultSub').textContent = '下次再來！';
           }
+          if (dbg) dbg.textContent = `[除錯] 成功 won=${data.won}`;
         } else {
           document.getElementById('scratchResultIcon').textContent = '⚠️';
           document.getElementById('scratchResultText').textContent = data.error || '發生錯誤';
+          if (dbg) dbg.textContent = `[除錯] API 錯誤：${data.error || '未知'}`;
         }
       } catch (err) {
         document.getElementById('scratchResultIcon').textContent = '⚠️';
         document.getElementById('scratchResultText').textContent = '網路錯誤，請重試';
+        if (dbg) dbg.textContent = `[除錯] fetch 例外：${err.message}`;
       }
       apiResultReady = true;
       revealIfReady();
