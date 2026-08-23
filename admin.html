@@ -551,35 +551,95 @@ async function endCampaign(id, title) {
 
 // ── 券紀錄 ──
 
+let allCoupons = [];
+
 async function loadCoupons() {
   document.getElementById('tab-content').innerHTML = '<div class="loading">載入中...</div>';
   const res = await fetch(`${API}/api/admin/coupons`);
   const data = await res.json();
-  const coupons = data.coupons || [];
+  allCoupons = data.coupons || [];
+  renderCoupons();
+}
 
-  const couponHTML = coupons.map(c => {
+function renderCoupons() {
+  const statusFilter = document.getElementById('filter-status')?.value || 'all';
+  const nameFilter = document.getElementById('filter-name')?.value || 'all';
+  const search = (document.getElementById('filter-search')?.value || '').trim().toLowerCase();
+
+  let filtered = allCoupons;
+
+  if (statusFilter !== 'all') {
+    filtered = filtered.filter(c => {
+      if (statusFilter === 'expired' && c.status === 'active' && new Date(c.expires_at) < new Date()) return true;
+      return c.status === statusFilter;
+    });
+  }
+
+  if (nameFilter !== 'all') {
+    filtered = filtered.filter(c => c.title === nameFilter);
+  }
+
+  if (search) {
+    filtered = filtered.filter(c =>
+      (c.name || '').toLowerCase().includes(search) ||
+      (c.phone || '').includes(search) ||
+      (c.code || '').includes(search)
+    );
+  }
+
+  // 統計
+  const total = allCoupons.length;
+  const activeCount = allCoupons.filter(c => c.status === 'active').length;
+  const usedCount = allCoupons.filter(c => c.status === 'used').length;
+  const expiredCount = allCoupons.filter(c => c.status === 'expired').length;
+
+  // 券種列表
+  const couponNames = [...new Set(allCoupons.map(c => c.title))];
+  const nameOptions = couponNames.map(n => `<option value="${n}" ${nameFilter === n ? 'selected' : ''}>${n}</option>`).join('');
+
+  const couponHTML = filtered.map(c => {
     const isGift = c.type === 'gift' || c.discount === 0;
-    const amountText = isGift ? '🎁 贈品' : `NT$${c.discount}`;
+    const statusText = c.status === 'active' ? '未使用' : c.status === 'used' ? '已核銷' : '已過期';
+    const statusClass = c.status === 'active' ? 'badge-active' : c.status === 'used' ? 'badge-used' : 'badge-expired';
     return `
-    <div style="padding:12px 0;border-bottom:1px solid #f0f0f0;">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;">
-        <div>
-          <div style="font-size:14px;font-weight:bold;">${c.title} <span style="color:#FF8200">${amountText}</span></div>
-          <div style="font-size:12px;color:#999;margin-top:3px;">${c.name || '未命名'} ｜ ${c.phone || ''} ｜ 碼：${c.code}</div>
-          <div style="font-size:12px;color:#999;">效期：${new Date(c.expires_at).toLocaleDateString('zh-TW')}</div>
-          ${c.status === 'used' ? `<div style="font-size:12px;color:#999;">核銷：${new Date(c.used_at).toLocaleDateString('zh-TW')} ｜ ${c.used_store || ''} ｜ ${c.used_by || ''}</div>` : ''}
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:12px;margin-bottom:8px;background:${c.status === 'used' ? '#fafafa' : 'white'};border-radius:10px;border:1px solid #f0f0f0;">
+      <div style="flex:1;min-width:0;">
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+          <span style="font-size:14px;font-weight:bold;">${c.title}</span>
+          <span style="font-size:11px;padding:2px 8px;border-radius:8px;background:${isGift ? '#fff3e0' : '#e3f2fd'};color:${isGift ? '#e65100' : '#1565c0'};">${isGift ? '贈品' : 'NT$' + c.discount}</span>
         </div>
-        <span class="badge badge-${c.status}">${c.status === 'active' ? '未使用' : c.status === 'used' ? '已使用' : '已過期'}</span>
+        <div style="font-size:12px;color:#999;margin-top:4px;">${c.name || '未命名'} ｜ ${c.phone || ''}</div>
+        <div style="font-size:11px;color:#bbb;margin-top:2px;">碼 ${c.code} ｜ 效期 ${new Date(c.expires_at).toLocaleDateString('zh-TW')}${c.status === 'used' ? ` ｜ 核銷 ${new Date(c.used_at).toLocaleDateString('zh-TW')} ${c.used_store || ''} ${c.used_by || ''}` : ''}</div>
       </div>
+      <span class="badge ${statusClass}" style="white-space:nowrap;margin-left:8px;">${statusText}</span>
     </div>`;
   }).join('');
 
   document.getElementById('tab-content').innerHTML = `
-    <div class="section" style="padding-top:20px;">
-      <div class="card">
-        <h2>優惠券紀錄（最近 100 筆）</h2>
-        ${couponHTML || '<p style="color:#999;text-align:center;padding:20px;">尚無紀錄</p>'}
+    <div class="stats-grid" style="padding-bottom:0;">
+      <div class="stat-card"><div class="num">${total}</div><div class="label">總券數</div></div>
+      <div class="stat-card"><div class="num" style="color:#27ae60">${activeCount}</div><div class="label">未使用</div></div>
+      <div class="stat-card"><div class="num" style="color:#999">${usedCount}</div><div class="label">已核銷</div></div>
+      <div class="stat-card"><div class="num" style="color:#e74c3c">${expiredCount}</div><div class="label">已過期</div></div>
+    </div>
+    <div class="section">
+      <div class="card" style="padding:12px;">
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <select id="filter-status" onchange="renderCoupons()" style="width:auto;flex:1;min-width:80px;margin:0;font-size:12px;padding:8px;">
+            <option value="all" ${statusFilter === 'all' ? 'selected' : ''}>全部狀態</option>
+            <option value="active" ${statusFilter === 'active' ? 'selected' : ''}>未使用</option>
+            <option value="used" ${statusFilter === 'used' ? 'selected' : ''}>已核銷</option>
+            <option value="expired" ${statusFilter === 'expired' ? 'selected' : ''}>已過期</option>
+          </select>
+          <select id="filter-name" onchange="renderCoupons()" style="width:auto;flex:1;min-width:80px;margin:0;font-size:12px;padding:8px;">
+            <option value="all">全部券種</option>
+            ${nameOptions}
+          </select>
+          <input type="text" id="filter-search" placeholder="搜尋姓名/手機/券碼" oninput="renderCoupons()" style="flex:2;min-width:120px;margin:0;font-size:12px;padding:8px;">
+        </div>
       </div>
+      <div style="font-size:12px;color:#999;margin-bottom:10px;">顯示 ${filtered.length} / ${total} 筆</div>
+      ${couponHTML || '<div class="card" style="text-align:center;color:#999;padding:30px;">無符合條件的券</div>'}
     </div>
   `;
 }
