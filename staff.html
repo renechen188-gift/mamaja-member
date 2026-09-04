@@ -110,6 +110,10 @@ function showMain() {
           <span>📋 本店核銷紀錄</span>
           <button class="refresh-btn" onclick="loadHistory()">重新整理</button>
         </h2>
+        <div style="display:flex;gap:8px;margin-bottom:12px;">
+          <input type="date" id="history-date" style="margin-bottom:0;flex:1;" onchange="loadHistory()">
+          <button class="btn" style="width:auto;padding:0 16px;margin-bottom:0;background:#eee;color:#333;font-size:13px;" onclick="clearHistoryDate()">顯示最近</button>
+        </div>
         <div id="history-list"><div class="history-empty">載入中...</div></div>
       </div>
     </div>
@@ -149,15 +153,25 @@ async function redeemCoupon() {
   }
 }
 
+function clearHistoryDate() {
+  document.getElementById('history-date').value = '';
+  loadHistory();
+}
+
 async function loadHistory() {
   const listEl = document.getElementById('history-list');
+  const date = document.getElementById('history-date')?.value || '';
+  const params = new URLSearchParams({ store: currentStaff.store });
+  if (date) params.set('date', date);
+  else params.set('limit', '20');
+
   try {
-    const res = await fetch(`${API}/api/coupon/history?store=${encodeURIComponent(currentStaff.store)}&limit=20`);
+    const res = await fetch(`${API}/api/coupon/history?${params.toString()}`);
     const data = await res.json();
     const rows = data.history || [];
 
     if (rows.length === 0) {
-      listEl.innerHTML = '<div class="history-empty">本店尚無核銷紀錄</div>';
+      listEl.innerHTML = `<div class="history-empty">${date ? '這天沒有核銷紀錄' : '本店尚無核銷紀錄'}</div>`;
       return;
     }
 
