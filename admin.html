@@ -350,28 +350,63 @@ async function runAutoTag() {
 
 let couponTemplates = [];
 
+let welcomeCoupons = [];
+let welcomeCouponEditId = null;
+
 async function showSendCoupon() {
-  const [tagsRes, couponsRes] = await Promise.all([
+  const [tagsRes, templatesRes, welcomeRes] = await Promise.all([
     fetch(`${API}/api/admin/tags`),
-    fetch(`${API}/api/admin/coupons`)
+    fetch(`${API}/api/admin/coupon-templates`),
+    fetch(`${API}/api/admin/welcome-coupons`)
   ]);
   const tagsData = await tagsRes.json();
-  const couponsData = await couponsRes.json();
+  const templatesData = await templatesRes.json();
+  const welcomeData = await welcomeRes.json();
   allTags = tagsData.tags || [];
+  welcomeCoupons = welcomeData.welcome_coupons || [];
 
-  // 從歷史券建立模板（依券名去重，保留最新一筆的資料）
-  const templateMap = {};
-  for (const c of (couponsData.coupons || [])) {
-    if (!templateMap[c.title]) {
-      templateMap[c.title] = { type: c.type || 'gift', title: c.title, description: c.description || '', discount: c.discount || 0 };
-    }
-  }
-  couponTemplates = Object.values(templateMap);
+  const rawTemplates = templatesData.templates || [];
+  couponTemplates = rawTemplates.map(t => ({
+    type: t.type || 'gift', title: t.title, description: t.description || '', discount: t.discount || 0
+  }));
 
   const templateOptions = couponTemplates.map((t, i) => {
     const label = t.type === 'gift' ? '🎁' : '💰';
     return `<option value="${i}">${label} ${t.title}</option>`;
   }).join('');
+
+  const overviewHTML = rawTemplates.map(t => {
+    const isGift = t.type === 'gift' || t.discount === 0;
+    return `
+    <div style="padding:10px 12px;margin-bottom:8px;background:#fff8f2;border-radius:10px;border:1px solid #f0e5d8;">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
+        <span style="font-size:13.5px;font-weight:bold;">${isGift ? '🎁' : '💰'} ${t.title}</span>
+        <span style="font-size:11px;color:#999;white-space:nowrap;">已發 ${t.issued_count} 張</span>
+      </div>
+      ${t.description ? `<div style="font-size:12px;color:#888;margin-top:3px;">${t.description}</div>` : ''}
+      <div style="font-size:11px;color:#bbb;margin-top:3px;">${isGift ? '贈品券' : `折抵 NT$${t.discount}`} ｜ 最近發送 ${new Date(t.last_created).toLocaleDateString('zh-TW')}</div>
+    </div>`;
+  }).join('');
+
+  const welcomeHTML = welcomeCoupons.map(w => {
+    const isGift = w.type === 'gift' || w.discount === 0;
+    return `
+    <div style="padding:10px 12px;margin-bottom:8px;background:#fff8f2;border-radius:10px;border:1px solid #f0e5d8;">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">
+        <div>
+          <span style="font-size:13.5px;font-weight:bold;">${isGift ? '🎁' : '💰'} ${w.title}</span>
+          ${w.description ? `<div style="font-size:12px;color:#888;margin-top:3px;">${w.description}</div>` : ''}
+          <div style="font-size:11px;color:#bbb;margin-top:3px;">${isGift ? '贈品券' : `折抵 NT$${w.discount}`} ｜ 效期 ${w.expires_days} 天</div>
+        </div>
+        <div style="display:flex;gap:6px;flex-shrink:0;">
+          <button class="btn btn-sm" style="width:auto;padding:5px 10px;margin:0;background:#eee;color:#333;" onclick="editWelcomeCoupon(${w.id})">編輯</button>
+          <button class="btn btn-sm" style="width:auto;padding:5px 10px;margin:0;background:#f5f5f5;color:#e74c3c;" onclick="deleteWelcomeCoupon(${w.id})">刪除</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+
+  const editingWelcome = welcomeCoupons.find(w => w.id === welcomeCouponEditId);
 
   const tagOptions = allTags.map(t => `<option value="tag:${t.name}">🏷️ ${t.name}（${t.member_count} 人）</option>`).join('');
   const monthOptions = Array.from({length: 12}, (_, i) => {
@@ -381,6 +416,31 @@ async function showSendCoupon() {
 
   document.getElementById('tab-content').innerHTML = `
     <div class="section" style="padding-top:20px;">
+      <div class="card">
+        <h2>🎁 新會員迎新禮（新加入會員自動收到）</h2>
+        ${welcomeHTML || '<p style="color:#999;text-align:center;padding:10px;">尚未設定迎新禮</p>'}
+        <div style="margin-top:12px;padding:12px;background:#fafafa;border-radius:10px;">
+          <label style="font-size:12px;color:#999;display:block;margin-bottom:4px;">${editingWelcome ? '編輯迎新禮' : '新增迎新禮'}</label>
+          <input type="text" id="wc-title" placeholder="券名稱" value="${editingWelcome ? editingWelcome.title : ''}">
+          <input type="text" id="wc-desc" placeholder="說明" value="${editingWelcome ? (editingWelcome.description || '') : ''}">
+          <div class="form-row">
+            <div>
+              <label style="font-size:11px;color:#999">折抵金額（贈品填 0）</label>
+              <input type="number" id="wc-discount" value="${editingWelcome ? editingWelcome.discount : 0}">
+            </div>
+            <div>
+              <label style="font-size:11px;color:#999">效期天數</label>
+              <input type="number" id="wc-days" value="${editingWelcome ? editingWelcome.expires_days : 90}">
+            </div>
+          </div>
+          <button class="btn btn-success btn-sm" onclick="saveWelcomeCoupon()">${editingWelcome ? '儲存修改' : '新增'}</button>
+          ${editingWelcome ? `<button class="btn btn-sm" style="background:#eee;color:#333;" onclick="cancelWelcomeCouponEdit()">取消編輯</button>` : ''}
+        </div>
+      </div>
+      <div class="card">
+        <h2>🎨 所有券面設計（${rawTemplates.length} 種）</h2>
+        ${overviewHTML || '<p style="color:#999;text-align:center;padding:10px;">尚未發過任何優惠券</p>'}
+      </div>
       <div class="card">
         <h2>🎫 發送優惠券</h2>
         ${couponTemplates.length > 0 ? `
@@ -493,6 +553,52 @@ async function sendCoupon() {
     el.className = 'result error';
     el.innerHTML = `❌ 發送失敗：${data.error}`;
   }
+}
+
+function editWelcomeCoupon(id) {
+  welcomeCouponEditId = id;
+  showSendCoupon();
+}
+
+function cancelWelcomeCouponEdit() {
+  welcomeCouponEditId = null;
+  showSendCoupon();
+}
+
+async function saveWelcomeCoupon() {
+  const title = document.getElementById('wc-title').value.trim();
+  const description = document.getElementById('wc-desc').value.trim();
+  const discount = parseInt(document.getElementById('wc-discount').value) || 0;
+  const expires_days = parseInt(document.getElementById('wc-days').value) || 90;
+  const type = discount > 0 ? 'discount' : 'gift';
+
+  if (!title) { alert('請輸入券名稱'); return; }
+
+  const isEdit = welcomeCouponEditId !== null;
+  const res = await fetch(`${API}/api/admin/welcome-coupon`, {
+    method: isEdit ? 'PUT' : 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(isEdit
+      ? { id: welcomeCouponEditId, title, description, type, discount, expires_days }
+      : { title, description, type, discount, expires_days })
+  });
+  const data = await res.json();
+  if (data.success) {
+    welcomeCouponEditId = null;
+    await showSendCoupon();
+  } else {
+    alert(`❌ 儲存失敗：${data.error}`);
+  }
+}
+
+async function deleteWelcomeCoupon(id) {
+  if (!confirm('確定刪除這張迎新禮？之後新加入的會員就不會再收到這張券')) return;
+  await fetch(`${API}/api/admin/welcome-coupon`, {
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ id })
+  });
+  await showSendCoupon();
 }
 
 // ── 集章活動管理 ──
