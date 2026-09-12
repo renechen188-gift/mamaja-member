@@ -209,6 +209,7 @@ async function loadMembers() {
         <div>
           <div style="font-size:15px;font-weight:bold;">${m.name || '未命名'}</div>
           <div style="font-size:12px;color:#999;margin-top:3px;">${m.phone || ''} ｜ 生日 ${m.birthday || '未填'} ｜ ${new Date(m.created_at).toLocaleDateString('zh-TW')}</div>
+          <div style="font-size:12px;color:#999;margin-top:2px;">常去門市 ${m.preferred_store || '未填'} ｜ 辦公室訂餐 ${m.office_order === 'yes' ? '有' : '沒有'}</div>
         </div>
       </div>
       <div style="margin-top:6px;display:flex;align-items:center;flex-wrap:wrap;gap:4px;">
@@ -409,6 +410,9 @@ async function showSendCoupon() {
         <select id="c-target" onchange="togglePhoneInput()">
           <option value="all">📢 全部會員</option>
           <option value="phone">📱 指定會員（手機號碼）</option>
+          <option value="store:信義店">🏬 信義店會員</option>
+          <option value="store:內湖店">🏬 內湖店會員</option>
+          <option value="store:東湖康寧店">🏬 東湖康寧店會員</option>
           ${tagOptions}
           ${monthOptions}
         </select>
@@ -466,6 +470,10 @@ async function sendCoupon() {
     const month = parseInt(targetVal.substring(9));
     target = { birthday_month: month };
     targetLabel = `${month} 月壽星`;
+  } else if (targetVal.startsWith('store:')) {
+    const storeName = targetVal.substring(6);
+    target = { store: storeName };
+    targetLabel = `${storeName}會員`;
   }
 
   if (!confirm(`確定發送「${title}」給 ${targetLabel}？`)) return;
@@ -1226,9 +1234,11 @@ async function exportMembers() {
   const data = await res.json();
   const members = data.members || [];
   const csv = [
-    ['姓名','手機','生日','標籤','加入日期'].join(','),
+    ['姓名','手機','生日','常去門市','辦公室訂餐','標籤','加入日期'].join(','),
     ...members.map(m => [
       m.name || '', m.phone || '', m.birthday || '',
+      m.preferred_store || '',
+      m.office_order === 'yes' ? '有' : '沒有',
       (m.tags || []).join('/'),
       new Date(m.created_at).toLocaleDateString('zh-TW')
     ].join(','))
