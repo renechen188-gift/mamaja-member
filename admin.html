@@ -753,7 +753,7 @@ async function loadScratchCampaigns() {
     <div class="campaign-card">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;">
         <div>
-          <div class="c-title">🎰 ${c.title}</div>
+          <div class="c-title">🎰 ${c.title} ${c.trigger_type === 'new_member' ? '<span style="font-size:11px;font-weight:normal;color:#27ae60;">🆕 新會員自動發放</span>' : ''}</div>
           <div class="c-info">${c.description || ''}</div>
           <div class="c-info">${c.start_date} ~ ${c.end_date}</div>
         </div>
@@ -799,6 +799,13 @@ async function loadScratchCampaigns() {
         <div>
           <label style="font-size:12px;color:#999">每人可玩次數</label>
           <input type="number" id="scratch-max" value="1" min="1" style="width:80px;">
+        </div>
+        <div style="margin-top:12px;">
+          <label style="font-size:12px;color:#999">觸發方式</label>
+          <select id="scratch-trigger">
+            <option value="manual">手動發放（後台自己選對象發機會）</option>
+            <option value="new_member">新會員自動獲得（註冊當下自動發 1 次機會）</option>
+          </select>
         </div>
         <div style="margin-top:15px;">
           <label style="font-size:13px;font-weight:bold;color:#333;display:block;margin-bottom:8px;">🎁 獎品設定（中獎率合計不超過 100%）</label>
@@ -864,6 +871,7 @@ async function createScratchCampaign() {
   const start_date = document.getElementById('scratch-start').value;
   const end_date = document.getElementById('scratch-end').value;
   const max_plays = parseInt(document.getElementById('scratch-max').value) || 1;
+  const trigger_type = document.getElementById('scratch-trigger').value;
 
   if (!title || !start_date || !end_date) {
     alert('請填寫活動名稱、開始/結束日期');
@@ -906,7 +914,7 @@ async function createScratchCampaign() {
   const res = await fetch(`${API}/api/admin/scratch-campaign`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ title, description, trigger_type: 'manual', max_plays, start_date, end_date, prizes })
+    body: JSON.stringify({ title, description, trigger_type, max_plays, start_date, end_date, prizes })
   });
   const data = await res.json();
   const el = document.getElementById('scratch-result');
