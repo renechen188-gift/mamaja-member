@@ -74,6 +74,15 @@
     font-weight: 700;
     border-bottom-color: var(--orange);
   }
+  .tab-label { position: relative; display: inline-block; }
+  .tab-dot {
+    position: absolute; top: -3px; right: -9px;
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: var(--orange);
+    display: none;
+  }
+  .tab-dot.show { display: block; }
 
   /* TAB CONTENT */
   .tab-content { display: none; }
@@ -817,7 +826,7 @@
 <!-- TAB BAR -->
 <div class="tab-bar">
   <div class="tab active" onclick="switchTab('coupon')">優惠券</div>
-  <div class="tab" onclick="switchTab('activity')">活動</div>
+  <div class="tab" onclick="switchTab('activity')"><span class="tab-label">活動<span class="tab-dot" id="activityDot"></span></span></div>
   <div class="tab" onclick="switchTab('profile')">個人設定</div>
 </div>
 
@@ -914,6 +923,7 @@
           <span class="birthday-saved" id="birthdaySaved">已儲存</span>
         </div>
       </div>
+      <div class="form-hint" id="birthdayHint" style="margin:-6px 0 12px;">🎂 填寫生日，生日當月自動收到專屬好禮</div>
       <div class="profile-row">
         <span class="profile-row-label">加入日期</span>
         <span class="profile-row-value" id="profileJoinDate">—</span>
@@ -1136,12 +1146,21 @@ function renderApp() {
     birthdayInput.style.borderColor = '#4CAF50';
     birthdayBtn.style.display = 'none';
     birthdaySaved.style.display = 'inline';
+    document.getElementById('birthdayHint').style.display = 'none';
   }
 
   renderCoupons();
   renderWheelCards();
   renderScratchCards();
   renderStamps();
+  updateActivityBadge();
+}
+
+function updateActivityBadge() {
+  const hasUnused =
+    currentScratchChances.some(c => c.status === 'unused') ||
+    currentWheelChances.some(c => c.status === 'unused');
+  document.getElementById('activityDot').classList.toggle('show', hasUnused);
 }
 
 function escapeHtml(str) {
@@ -1289,6 +1308,9 @@ function switchTab(name) {
   });
   document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
   document.getElementById('tab-' + name).classList.add('active');
+  if (name === 'activity') {
+    document.getElementById('activityDot').classList.remove('show');
+  }
 }
 
 function filterCoupon(type, btn) {
