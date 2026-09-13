@@ -91,7 +91,8 @@ function showMain() {
     <div class="section">
       <div class="card">
         <h2>🎫 核銷優惠券</h2>
-        <p style="font-size:13px;color:#999;margin-bottom:15px;">請客人出示會員卡上的核銷碼</p>
+        <p style="font-size:13px;color:#999;margin-bottom:8px;">請客人出示會員卡上的核銷碼</p>
+        <p style="font-size:12px;color:#cc6600;background:#fff3e0;padding:8px 10px;border-radius:8px;margin-bottom:15px;">⚠️ 每筆消費限用一張優惠券，不可多張合併使用</p>
         <input type="text" id="coupon-code" placeholder="輸入核銷碼（6碼數字）" maxlength="6" inputmode="numeric" style="letter-spacing:3px;font-size:18px;text-align:center;">
         <button class="btn btn-primary" onclick="redeemCoupon()">確認核銷</button>
         <div class="coupon-result" id="coupon-result">
