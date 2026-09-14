@@ -1330,11 +1330,14 @@ async function endWheelCampaign(id, title) {
 
 let allCoupons = [];
 
+let couponStats = { total: 0, active: 0, used: 0, expired: 0 };
+
 async function loadCoupons() {
   document.getElementById('tab-content').innerHTML = '<div class="loading">載入中...</div>';
   const res = await fetch(`${API}/api/admin/coupons`);
   const data = await res.json();
   allCoupons = data.coupons || [];
+  couponStats = data.stats || { total: allCoupons.length, active: 0, used: 0, expired: 0 };
   renderCoupons();
 }
 
@@ -1364,11 +1367,11 @@ function renderCoupons() {
     );
   }
 
-  // 統計
-  const total = allCoupons.length;
-  const activeCount = allCoupons.filter(c => c.status === 'active').length;
-  const usedCount = allCoupons.filter(c => c.status === 'used').length;
-  const expiredCount = allCoupons.filter(c => c.status === 'expired').length;
+  // 統計（查全部資料庫，不受下面列表 100 筆上限影響）
+  const total = couponStats.total;
+  const activeCount = couponStats.active;
+  const usedCount = couponStats.used;
+  const expiredCount = couponStats.expired;
 
   // 券種列表
   const couponNames = [...new Set(allCoupons.map(c => c.title))];
