@@ -1331,51 +1331,70 @@ async function endWheelCampaign(id, title) {
 let allCoupons = [];
 
 let couponStats = { total: 0, active: 0, used: 0, expired: 0 };
+let allCouponTitles = [];
+let couponFilterState = { status: 'all', name: 'all', search: '' };
+let couponSearchDebounce = null;
 
 async function loadCoupons() {
   document.getElementById('tab-content').innerHTML = '<div class="loading">載入中...</div>';
-  const res = await fetch(`${API}/api/admin/coupons`);
+
+  const [templatesRes] = await Promise.all([
+    fetch(`${API}/api/admin/coupon-templates`)
+  ]);
+  const templatesData = await templatesRes.json();
+  allCouponTitles = (templatesData.templates || []).map(t => t.title);
+
+  await fetchAndRenderCoupons();
+}
+
+async function fetchAndRenderCoupons() {
+  const params = new URLSearchParams();
+  if (couponFilterState.status !== 'all') params.set('status', couponFilterState.status);
+  if (couponFilterState.name !== 'all') params.set('title', couponFilterState.name);
+  if (couponFilterState.search) params.set('search', couponFilterState.search);
+
+  const res = await fetch(`${API}/api/admin/coupons?${params.toString()}`);
   const data = await res.json();
   allCoupons = data.coupons || [];
   couponStats = data.stats || { total: allCoupons.length, active: 0, used: 0, expired: 0 };
   renderCoupons();
 }
 
-function renderCoupons() {
-  const statusFilter = document.getElementById('filter-status')?.value || 'all';
-  const nameFilter = document.getElementById('filter-name')?.value || 'all';
-  const search = (document.getElementById('filter-search')?.value || '').trim().toLowerCase();
+function onCouponFilterChange() {
+  couponFilterState.status = document.getElementById('filter-status')?.value || 'all';
+  couponFilterState.name = document.getElementById('filter-name')?.value || 'all';
+  fetchAndRenderCoupons();
+}
 
-  let filtered = allCoupons;
-
-  if (statusFilter !== 'all') {
-    filtered = filtered.filter(c => {
-      if (statusFilter === 'expired' && c.status === 'active' && new Date(c.expires_at) < new Date()) return true;
-      return c.status === statusFilter;
+function onCouponSearchInput() {
+  couponFilterState.search = document.getElementById('filter-search')?.value.trim() || '';
+  clearTimeout(couponSearchDebounce);
+  couponSearchDebounce = setTimeout(() => {
+    const el = document.getElementById('filter-search');
+    const cursorPos = el ? el.selectionStart : null;
+    fetchAndRenderCoupons().then(() => {
+      const newEl = document.getElementById('filter-search');
+      if (newEl && cursorPos !== null) {
+        newEl.focus();
+        newEl.setSelectionRange(cursorPos, cursorPos);
+      }
     });
-  }
+  }, 350);
+}
 
-  if (nameFilter !== 'all') {
-    filtered = filtered.filter(c => c.title === nameFilter);
-  }
+function renderCoupons() {
+  const statusFilter = couponFilterState.status;
+  const nameFilter = couponFilterState.name;
+  const filtered = allCoupons;
 
-  if (search) {
-    filtered = filtered.filter(c =>
-      (c.name || '').toLowerCase().includes(search) ||
-      (c.phone || '').includes(search) ||
-      (c.code || '').includes(search)
-    );
-  }
-
-  // 統計（查全部資料庫，不受下面列表 100 筆上限影響）
+  // 統計（查全部資料庫，不受下面列表筆數上限影響）
   const total = couponStats.total;
   const activeCount = couponStats.active;
   const usedCount = couponStats.used;
   const expiredCount = couponStats.expired;
 
-  // 券種列表
-  const couponNames = [...new Set(allCoupons.map(c => c.title))];
-  const nameOptions = couponNames.map(n => `<option value="${n}" ${nameFilter === n ? 'selected' : ''}>${n}</option>`).join('');
+  // 券種列表（來自全資料庫的不重複券名，不受目前篩選影響）
+  const nameOptions = allCouponTitles.map(n => `<option value="${n}" ${nameFilter === n ? 'selected' : ''}>${n}</option>`).join('');
 
   const couponHTML = filtered.map(c => {
     const isGift = c.type === 'gift' || c.discount === 0;
@@ -1405,20 +1424,20 @@ function renderCoupons() {
     <div class="section">
       <div class="card" style="padding:12px;">
         <div style="display:flex;gap:8px;flex-wrap:wrap;">
-          <select id="filter-status" onchange="renderCoupons()" style="width:auto;flex:1;min-width:80px;margin:0;font-size:12px;padding:8px;">
+          <select id="filter-status" onchange="onCouponFilterChange()" style="width:auto;flex:1;min-width:80px;margin:0;font-size:12px;padding:8px;">
             <option value="all" ${statusFilter === 'all' ? 'selected' : ''}>全部狀態</option>
             <option value="active" ${statusFilter === 'active' ? 'selected' : ''}>未使用</option>
             <option value="used" ${statusFilter === 'used' ? 'selected' : ''}>已核銷</option>
             <option value="expired" ${statusFilter === 'expired' ? 'selected' : ''}>已過期</option>
           </select>
-          <select id="filter-name" onchange="renderCoupons()" style="width:auto;flex:1;min-width:80px;margin:0;font-size:12px;padding:8px;">
+          <select id="filter-name" onchange="onCouponFilterChange()" style="width:auto;flex:1;min-width:80px;margin:0;font-size:12px;padding:8px;">
             <option value="all">全部券種</option>
             ${nameOptions}
           </select>
-          <input type="text" id="filter-search" placeholder="搜尋姓名/手機/券碼" oninput="renderCoupons()" style="flex:2;min-width:120px;margin:0;font-size:12px;padding:8px;">
+          <input type="text" id="filter-search" placeholder="搜尋姓名/手機/券碼" value="${couponFilterState.search}" oninput="onCouponSearchInput()" style="flex:2;min-width:120px;margin:0;font-size:12px;padding:8px;">
         </div>
       </div>
-      <div style="font-size:12px;color:#999;margin-bottom:10px;">顯示 ${filtered.length} / ${total} 筆</div>
+      <div style="font-size:12px;color:#999;margin-bottom:10px;">顯示 ${filtered.length} 筆${(couponFilterState.status !== 'all' || couponFilterState.name !== 'all' || couponFilterState.search) ? '（符合篩選條件，全資料庫查詢）' : `／總共 ${total} 筆`}</div>
       ${couponHTML || '<div class="card" style="text-align:center;color:#999;padding:30px;">無符合條件的券</div>'}
     </div>
   `;
