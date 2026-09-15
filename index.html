@@ -1228,10 +1228,11 @@ function renderCouponList(containerId, coupons, state) {
       btn.addEventListener('click', () => {
         const code = btn.dataset.code;
         const coupon = currentCoupons.find(c => c.id == btn.dataset.id);
-        navigator.clipboard.writeText(code).then(() => {
-          alert(`券碼 ${code} 已複製！\n\n請到線上點餐頁面，在備註欄貼上此券碼：${code}\n\n店員確認後會為您附上：${coupon ? coupon.description : '贈品'}`);
+        const noteText = `麻媽家會員兌換：${coupon ? coupon.title : '贈品'}｜核銷碼 ${code}`;
+        navigator.clipboard.writeText(noteText).then(() => {
+          alert(`已複製！請到線上點餐頁面，在備註欄貼上：\n\n${noteText}\n\n店員看到備註就會知道要附上：${coupon ? coupon.description : '贈品'}`);
         }).catch(() => {
-          prompt('請複製此券碼，貼到點餐備註欄：', code);
+          prompt('請複製以下內容，貼到點餐備註欄：', noteText);
         });
       });
     });
