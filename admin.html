@@ -181,6 +181,9 @@ async function loadOverview() {
 
 let allMembers = [];
 
+let memberFilterState = { search: '', tag: 'all' };
+let memberSearchDebounce = null;
+
 async function loadMembers() {
   document.getElementById('tab-content').innerHTML = '<div class="loading">載入中...</div>';
   const [membersRes, tagsRes] = await Promise.all([
@@ -191,8 +194,46 @@ async function loadMembers() {
   const tagsData = await tagsRes.json();
   allMembers = membersData.members || [];
   allTags = tagsData.tags || [];
+  renderMembers();
+}
 
-  const memberHTML = allMembers.map(m => {
+function onMemberSearchInput() {
+  memberFilterState.search = document.getElementById('member-search')?.value.trim().toLowerCase() || '';
+  clearTimeout(memberSearchDebounce);
+  memberSearchDebounce = setTimeout(() => {
+    const el = document.getElementById('member-search');
+    const cursorPos = el ? el.selectionStart : null;
+    renderMembers();
+    const newEl = document.getElementById('member-search');
+    if (newEl && cursorPos !== null) {
+      newEl.focus();
+      newEl.setSelectionRange(cursorPos, cursorPos);
+    }
+  }, 250);
+}
+
+function onMemberTagFilterChange() {
+  memberFilterState.tag = document.getElementById('member-tag-filter')?.value || 'all';
+  renderMembers();
+}
+
+function renderMembers() {
+  const { search, tag } = memberFilterState;
+  let filteredMembers = allMembers;
+
+  if (tag !== 'all') {
+    filteredMembers = filteredMembers.filter(m => (m.tags || []).includes(tag));
+  }
+  if (search) {
+    filteredMembers = filteredMembers.filter(m =>
+      (m.name || '').toLowerCase().includes(search) ||
+      (m.phone || '').includes(search)
+    );
+  }
+
+  const tagFilterOptions = allTags.map(t => `<option value="${t.name}" ${tag === t.name ? 'selected' : ''}>${t.name}（${t.member_count} 人）</option>`).join('');
+
+  const memberHTML = filteredMembers.map(m => {
     const memberTags = m.tags || [];
     const tagsHTML = memberTags.map(t => {
       const tagDef = allTags.find(at => at.name === t);
@@ -228,8 +269,15 @@ async function loadMembers() {
   document.getElementById('tab-content').innerHTML = `
     <div class="section" style="padding-top:20px;">
       <div class="card">
-        <h2>所有會員（${allMembers.length} 人）</h2>
-        ${memberHTML || '<p style="color:#999;text-align:center;padding:20px;">尚無會員</p>'}
+        <h2>所有會員（共 ${allMembers.length} 人${(search || tag !== 'all') ? `，符合條件 ${filteredMembers.length} 人` : ''}）</h2>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:15px;">
+          <input type="text" id="member-search" placeholder="搜尋姓名/手機" value="${search}" oninput="onMemberSearchInput()" style="flex:2;min-width:140px;margin:0;">
+          <select id="member-tag-filter" onchange="onMemberTagFilterChange()" style="flex:1;min-width:120px;margin:0;">
+            <option value="all">全部標籤</option>
+            ${tagFilterOptions}
+          </select>
+        </div>
+        ${memberHTML || '<p style="color:#999;text-align:center;padding:20px;">沒有符合條件的會員</p>'}
       </div>
     </div>
   `;
@@ -523,7 +571,7 @@ async function showSendCoupon() {
           ${monthOptions}
         </select>
         <div id="phone-input-wrap" style="display:none;">
-          <input type="tel" id="c-phone" placeholder="輸入會員手機號碼" maxlength="10" inputmode="numeric">
+          <textarea id="c-phone" placeholder="輸入會員手機號碼，多筆用逗號或換行分隔&#10;例如：0912345678, 0987654321" rows="3" style="width:100%;padding:12px;border:1px solid #ddd;border-radius:8px;font-size:15px;margin-bottom:10px;font-family:inherit;resize:vertical;"></textarea>
         </div>
         <button class="btn btn-primary" onclick="sendCoupon()">發送優惠券</button>
         <div class="result" id="send-result"></div>
@@ -564,10 +612,11 @@ async function sendCoupon() {
     target = 'all';
     targetLabel = '全部會員';
   } else if (targetVal === 'phone') {
-    const phone = (document.getElementById('c-phone').value || '').trim();
-    if (!phone) { alert('請輸入手機號碼'); return; }
-    target = { phone };
-    targetLabel = `手機 ${phone}`;
+    const raw = (document.getElementById('c-phone').value || '').trim();
+    if (!raw) { alert('請輸入手機號碼'); return; }
+    const phoneList = raw.split(/[,，\s]+/).map(p => p.trim()).filter(Boolean);
+    target = { phone: phoneList.join(',') };
+    targetLabel = phoneList.length > 1 ? `指定 ${phoneList.length} 位會員（手機）` : `手機 ${phoneList[0]}`;
   } else if (targetVal.startsWith('tag:')) {
     const tagName = targetVal.substring(4);
     target = { tag: tagName };
