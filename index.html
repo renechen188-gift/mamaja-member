@@ -944,6 +944,21 @@
 
 </div><!-- /#app -->
 
+<!-- 手機號碼確認 MODAL（既有會員換裝置/換登入身分時，先用手機號碼快速接回原本資料） -->
+<div class="modal-overlay" id="phoneCheckModal" style="align-items:center;">
+  <div class="modal center">
+    <div class="modal-title">歡迎回來</div>
+    <div class="modal-sub">請輸入手機號碼，為您找回原本的會員資料</div>
+
+    <div class="form-label">手機號碼</div>
+    <input type="tel" id="phonecheck-phone" class="form-input" placeholder="請輸入手機號碼" maxlength="10">
+
+    <div class="form-error" id="phonecheck-error"></div>
+
+    <button class="modal-close" style="margin-top:20px;" onclick="submitPhoneCheck()" id="phonecheck-submit-btn">確認</button>
+  </div>
+</div>
+
 <!-- 註冊 MODAL -->
 <div class="modal-overlay" id="registerModal" style="align-items:center;">
   <div class="modal center">
@@ -1027,7 +1042,7 @@ async function loadMember() {
   try {
     const res = await fetch(`${API}/api/member/points?line_id=${encodeURIComponent(lineProfile.userId)}`);
     if (res.status === 404) {
-      showRegisterModal();
+      showPhoneCheckModal();
       return;
     }
     if (!res.ok) throw new Error('伺服器錯誤 (' + res.status + ')');
@@ -1049,6 +1064,61 @@ function showError(msg) {
   document.getElementById('errorState').classList.remove('hidden');
 }
 
+/* ---------- 手機號碼確認（既有會員換裝置/換登入身分快速接回） ---------- */
+
+function showPhoneCheckModal() {
+  document.getElementById('loadingState').classList.add('hidden');
+  document.getElementById('phonecheck-phone').value = '';
+  document.getElementById('phonecheck-error').style.display = 'none';
+  document.getElementById('phoneCheckModal').classList.add('open');
+}
+
+async function submitPhoneCheck() {
+  const phone = document.getElementById('phonecheck-phone').value.trim();
+  const errorEl = document.getElementById('phonecheck-error');
+  errorEl.style.display = 'none';
+
+  if (!/^09\d{8}$/.test(phone)) {
+    errorEl.textContent = '請輸入正確的手機號碼格式（例：0912345678）';
+    errorEl.style.display = 'block';
+    return;
+  }
+
+  const btn = document.getElementById('phonecheck-submit-btn');
+  btn.disabled = true;
+  btn.textContent = '查詢中...';
+
+  try {
+    const checkRes = await fetch(`${API}/api/member/by-phone?phone=${encodeURIComponent(phone)}`);
+    document.getElementById('phoneCheckModal').classList.remove('open');
+
+    if (checkRes.status === 404) {
+      // 查無此手機號碼 → 是真的新會員，走完整註冊表單（手機號碼帶過去，不用重填）
+      showRegisterModal(phone);
+      return;
+    }
+    if (!checkRes.ok) throw new Error('查詢失敗');
+
+    // 手機號碼比對到既有會員 → 直接把目前的登入身分接回原本資料
+    document.getElementById('loadingState').classList.remove('hidden');
+    const linkRes = await fetch(`${API}/api/member`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ line_id: lineProfile.userId, name: lineProfile.displayName, phone })
+    });
+    if (!linkRes.ok) throw new Error('接回會員資料失敗');
+    await loadMember();
+  } catch (err) {
+    console.error(err);
+    document.getElementById('phoneCheckModal').classList.add('open');
+    errorEl.textContent = '查詢失敗，請稍後再試';
+    errorEl.style.display = 'block';
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '確認';
+  }
+}
+
 /* ---------- 註冊 ---------- */
 
 let regOfficeOrder = 'no';
@@ -1059,9 +1129,10 @@ function setOfficeOrder(val) {
   document.getElementById('reg-office-no').classList.toggle('active', val === 'no');
 }
 
-function showRegisterModal() {
+function showRegisterModal(prefillPhone) {
   document.getElementById('loadingState').classList.add('hidden');
   document.getElementById('reg-name').value = (lineProfile && lineProfile.displayName) || '';
+  document.getElementById('reg-phone').value = prefillPhone || '';
   document.getElementById('reg-store').value = '';
   setOfficeOrder('no');
   document.getElementById('registerModal').classList.add('open');
